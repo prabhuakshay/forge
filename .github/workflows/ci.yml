@@ -15,14 +15,19 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
+    # uv reads this to select (and auto-download) the interpreter for the venv,
+    # so we don't need a separate setup-python step.
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v5
 
+      # Install uv via its standalone shell installer rather than a Node-based
+      # action, so CI stays off the deprecated Node 20 action runtime entirely.
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Sync dev dependencies
         run: uv sync --group dev
