@@ -1,0 +1,39 @@
+# CI mirrors the local forge gate (and the prek pre-commit hooks): ruff, mypy,
+# pytest. A green run means the same thing /forge:check does locally. The matrix
+# spans the versions pyproject supports (requires-python >=3.10).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+
+      - name: Sync dev dependencies
+        run: uv sync --group dev
+
+      - name: Lint & format check
+        run: |
+          uv run --group dev ruff check .
+          uv run --group dev ruff format --check .
+
+      - name: Type check
+        run: uv run --group dev mypy lib tests
+
+      - name: Tests + coverage
+        run: uv run --group dev pytest --cov
