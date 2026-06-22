@@ -108,5 +108,18 @@ Cutting a release? Follow the checklist in [docs/RELEASING.md](docs/RELEASING.md
 
 ## Installation
 
-Add this directory as a plugin in Claude Code, then run `/forge:init` in a Python
-project to adopt the workflow.
+Install from the plugin marketplace inside Claude Code:
+
+```text
+/plugin marketplace add prabhuakshay/forge
+/plugin install forge@forge
+```
+
+The first command registers this repo as a marketplace; the second installs the
+`forge` plugin from it (`forge@forge` is `<plugin>@<marketplace>`). To update
+later, re-run `/plugin marketplace update forge`.
+
+Prefer a local checkout? Clone the repo and add the directory as a plugin in
+Claude Code instead.
+
+Then run `/forge:init` in a Python project to adopt the workflow.
