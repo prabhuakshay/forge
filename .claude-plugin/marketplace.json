@@ -1,13 +1,10 @@
 {
   "name": "forge",
   "owner": {
-    "name": "Akshay Prabhu",
-    "url": "https://github.com/prabhuakshay"
+    "name": "Akshay Prabhu"
   },
-  "metadata": {
-    "description": "Marketplace for the forge Python project workflow plugin.",
-    "version": "0.1.5"
-  },
+  "description": "Marketplace for the forge Python project workflow plugin.",
+  "version": "0.1.5",
   "plugins": [
     {
       "name": "forge",
@@ -15,10 +12,10 @@
       "description": "Opinionated Python project workflow: plan → build → check → audit → release, with hook-enforced gates, durable design directives, and docs/.env-in-sync guarantees.",
       "version": "0.1.5",
       "author": {
-        "name": "Akshay Prabhu",
-        "url": "https://github.com/prabhuakshay"
+        "name": "Akshay Prabhu"
       },
       "homepage": "https://github.com/prabhuakshay/forge",
+      "repository": "https://github.com/prabhuakshay/forge",
       "license": "MIT",
       "keywords": ["python", "workflow", "quality", "uv", "ruff", "mypy", "pytest"],
       "category": "workflow"
