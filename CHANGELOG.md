@@ -6,6 +6,15 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-22
+
+### Added
+- GitHub Actions CI badge in the README.
+
+### Documentation
+- `CHANGELOG.md` following Keep a Changelog.
+- Release checklist at `docs/RELEASING.md`, linked from the README.
+
 ## [0.1.0] - 2026-06-22
 
 First public release.
@@ -40,5 +49,6 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/prabhuakshay/forge/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/prabhuakshay/forge/releases/tag/v0.1.0
