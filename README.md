@@ -1,6 +1,8 @@
 # forge
 
 [![ci](https://github.com/prabhuakshay/forge/actions/workflows/ci.yml/badge.svg)](https://github.com/prabhuakshay/forge/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/prabhuakshay/forge?sort=semver)](https://github.com/prabhuakshay/forge/releases/latest)
+[![python](https://img.shields.io/badge/python-3.10%E2%80%933.13-blue)](https://github.com/prabhuakshay/forge/blob/main/pyproject.toml)
 
 An opinionated **Python project workflow** as a Claude Code plugin. It makes the
 quality bar *executable* and makes the agent run it on every loop — so projects
