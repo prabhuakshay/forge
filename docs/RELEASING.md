@@ -26,20 +26,24 @@ Semantic Versioning. Pick the bump from what changed since the last tag:
 1. [ ] **Bump the version** in `.claude-plugin/plugin.json` (`version`) and in
    `pyproject.toml` (`[project] version`). Keep them in agreement — they're the
    two sources of truth for the plugin.
-2. [ ] **Update `CHANGELOG.md`:** move everything under `## [Unreleased]` into a
+2. [ ] **Refresh the lockfile:** run `uv lock` so `uv.lock` records the new
+   version, and stage it. Skipping this gets the release commit *bounced by the
+   prek hook* — `uv run` regenerates `uv.lock` mid-hook, and prek fails any hook
+   that modifies a tracked file. Doing it up front keeps the commit clean.
+3. [ ] **Update `CHANGELOG.md`:** move everything under `## [Unreleased]` into a
    new `## [X.Y.Z] - YYYY-MM-DD` section. Add anything notable that's missing
    rather than shipping an incomplete changelog. Update the compare/release links
    at the bottom (`[Unreleased]` → `compare/vX.Y.Z...HEAD`, add `[X.Y.Z]`).
-3. [ ] **Commit** the bump: `git commit -m "Release vX.Y.Z"` (the prek hook runs
+4. [ ] **Commit** the bump: `git commit -m "Release vX.Y.Z"` (the prek hook runs
    the gate; let it pass, don't bypass).
-4. [ ] **Push** and wait for CI to go green: `git push`.
-5. [ ] **Tag** the released commit annotated, and push the tag:
+5. [ ] **Push** and wait for CI to go green: `git push`.
+6. [ ] **Tag** the released commit annotated, and push the tag:
    `git tag -a vX.Y.Z -m "forge vX.Y.Z" && git push origin vX.Y.Z`.
-6. [ ] **Create the GitHub release** from the tag with written notes:
+7. [ ] **Create the GitHub release** from the tag with written notes:
    `gh release create vX.Y.Z --title "vX.Y.Z" --notes-file <notes>`
    (use `--generate-notes` only as a starting point — prefer a real summary; see
    the v0.1.0 release for the house style).
-7. [ ] **Verify:** `gh release view vX.Y.Z` shows the right tag, not a draft, and
+8. [ ] **Verify:** `gh release view vX.Y.Z` shows the right tag, not a draft, and
    the README CI badge is green.
 
 ## Notes
