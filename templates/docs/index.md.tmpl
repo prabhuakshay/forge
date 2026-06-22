@@ -1,0 +1,19 @@
+# {{PROJECT_NAME}} documentation
+
+{{DESCRIPTION}}
+
+## Contents
+
+- [Architecture](architecture.md) — how the pieces fit together.
+- [Decisions](decisions/README.md) — the binding design decisions and their rationale.
+
+## Quickstart
+
+```bash
+uv sync --all-extras        # set up the environment
+cp .env.example .env        # configure (fill in real values)
+uv run pytest               # run the tests
+```
+
+> These commands are verified by `/forge:audit` — if they drift from reality,
+> the audit fails. Keep them runnable.

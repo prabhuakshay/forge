@@ -1,0 +1,35 @@
+# Dev configuration for the forge plugin ITSELF (not the projects it scaffolds).
+#
+# forge's runtime is stdlib-only and is loaded by path (hooks/scripts/_bootstrap.py
+# puts the root on sys.path), so this file declares NO build backend and ships no
+# package — it exists purely to lint, type-check, and test the plugin's own code,
+# the same bar forge holds its users to.
+[project]
+name = "forge-plugin"
+version = "0.1.0"
+description = "Dev tooling for the forge Claude Code plugin"
+requires-python = ">=3.10"
+
+# Installed via `uv run --group dev ...` / `uv sync --group dev`.
+[dependency-groups]
+dev = ["pytest>=8", "pytest-cov>=5", "mypy>=1.10", "ruff>=0.6", "prek>=0.0.1"]
+
+[tool.pytest.ini_options]
+# `pythonpath = ["."]` makes `from lib import ...` resolve in tests without an
+# installed package, mirroring how the hook scripts import at runtime.
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["lib"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true

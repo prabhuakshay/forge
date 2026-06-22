@@ -1,0 +1,43 @@
+# prek / pre-commit config for the forge plugin ITSELF.
+#
+# prek is a faster drop-in for pre-commit (https://github.com/j178/prek). Install
+# the git hooks once with:
+#     uv run --group dev prek install
+#
+# These run the SAME gate as the dev commands and CI — ruff, mypy, pytest — via
+# `uv run --group dev`, so the tool versions pinned in uv.lock are the single
+# source of truth and a commit-time hook can never drift from the in-session gate
+# forge enforces. (User projects scaffolded by /forge:init get the remote-repo
+# variant in templates/pre-commit-config.yaml.tmpl, which doesn't assume uv.)
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --group dev ruff format
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --group dev ruff check --fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      # mypy and pytest need the whole package in view, not just staged files,
+      # so they ignore the filename list and run on a stable target set.
+      - id: mypy
+        name: mypy
+        entry: uv run --group dev mypy lib tests
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: pytest
+        name: pytest
+        entry: uv run --group dev pytest -q
+        language: system
+        always_run: true
+        pass_filenames: false

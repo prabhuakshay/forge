@@ -1,0 +1,27 @@
+# prek-compatible hook config (prek is a faster drop-in for pre-commit).
+# Install once:  uv run prek install
+# These mirror the forge gates so the same checks fire for humans at commit time,
+# not just for the agent. Keep them in lockstep with /forge:check and /forge:audit.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff           # lint, with autofix
+        args: [--fix]
+      - id: ruff-format    # format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies: []
+
+  - repo: local
+    hooks:
+      # Block commits that leave config undocumented — the onboarding contract.
+      - id: forge-env-sync
+        name: forge .env.example sync
+        entry: python3 scripts/check_env_sync.py
+        language: system
+        pass_filenames: false
+        files: \.(py|env\.example)$

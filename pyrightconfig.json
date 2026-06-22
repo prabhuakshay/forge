@@ -1,0 +1,5 @@
+{
+  "//": "The plugin root is importable at runtime via hooks/scripts/_bootstrap.py, which inserts it on sys.path. extraPaths tells the static checker the same thing so `from lib import ...` resolves in hook scripts.",
+  "extraPaths": ["."],
+  "reportUnusedImport": false
+}

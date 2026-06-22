@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Fail if any env var read in code is missing from .env.example.
+
+Self-contained (stdlib only) so it runs as a prek/pre-commit hook without the
+forge plugin installed. This is the project-local mirror of forge's env-sync
+audit — keep onboarding's "copy .env.example and go" promise honest.
+"""
+
+from __future__ import annotations
+
+import os
+import re
+import sys
+
+OS_ENV = re.compile(r"""os\.environ(?:\.get)?\[?\s*['"]([A-Z][A-Z0-9_]*)['"]""")
+GETENV = re.compile(r"""os\.getenv\(\s*['"]([A-Z][A-Z0-9_]*)['"]""")
+SKIP = {".git", ".venv", "venv", "__pycache__", "build", "dist", ".forge"}
+
+
+def code_vars(root: str) -> set[str]:
+    """Env var names read via os.environ / os.getenv anywhere under `root`."""
+    found: set[str] = set()
+    for dirpath, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if d not in SKIP]
+        for name in files:
+            if not name.endswith(".py"):
+                continue
+            try:
+                with open(
+                    os.path.join(dirpath, name), encoding="utf-8", errors="ignore"
+                ) as fh:
+                    text = fh.read()
+            except OSError:
+                continue
+            found.update(OS_ENV.findall(text))
+            found.update(GETENV.findall(text))
+    return found
+
+
+def example_vars(root: str) -> set[str]:
+    """Keys declared in `.env.example`."""
+    keys: set[str] = set()
+    try:
+        with open(os.path.join(root, ".env.example"), encoding="utf-8") as fh:
+            for raw in fh:
+                line = raw.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    keys.add(line.split("=", 1)[0].strip())
+    except OSError:
+        pass
+    return keys
+
+
+def main() -> int:
+    """Exit non-zero if any code env var is missing from .env.example."""
+    root = "."
+    missing = sorted(code_vars(root) - example_vars(root))
+    if missing:
+        print(
+            "Undocumented env vars (add to .env.example): " + ", ".join(missing),
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
