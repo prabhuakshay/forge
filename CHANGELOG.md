@@ -6,6 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-22
+
+### Documentation
+- Release checklist now includes a `uv lock` / stage-`uv.lock` step so the
+  release commit isn't bounced by the prek hook.
+
 ## [0.1.1] - 2026-06-22
 
 ### Added
@@ -49,6 +55,7 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/prabhuakshay/forge/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/prabhuakshay/forge/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/prabhuakshay/forge/releases/tag/v0.1.0
