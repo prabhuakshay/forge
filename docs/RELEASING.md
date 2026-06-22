@@ -18,7 +18,7 @@ Semantic Versioning. Pick the bump from what changed since the last tag:
 ## Preconditions
 
 - [ ] On `main`, working tree clean, up to date with `origin`.
-- [ ] Gate is green locally: `uv run --group dev ruff check . && uv run --group dev ruff format --check . && uv run --group dev mypy lib tests && uv run --group dev pytest --cov`.
+- [ ] Gate is green locally: `uv run --group dev ruff check . && uv run --group dev ruff format --check . && uv run --group dev mypy lib tests bin && uv run --group dev pytest --cov`.
 - [ ] Manifests valid: `claude plugin validate .`.
 - [ ] CI is green for the tip commit (the same gate across Python 3.10–3.13).
 

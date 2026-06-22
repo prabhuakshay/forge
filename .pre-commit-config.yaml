@@ -30,7 +30,7 @@ repos:
       # so they ignore the filename list and run on a stable target set.
       - id: mypy
         name: mypy
-        entry: uv run --group dev mypy lib tests
+        entry: uv run --group dev mypy lib tests bin
         language: system
         types: [python]
         pass_filenames: false

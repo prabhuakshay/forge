@@ -38,7 +38,22 @@ jobs:
           uv run --group dev ruff format --check .
 
       - name: Type check
-        run: uv run --group dev mypy lib tests
+        run: uv run --group dev mypy lib tests bin
 
       - name: Tests + coverage
         run: uv run --group dev pytest --cov
+
+  # Schema-check the plugin and marketplace manifests, so a bad edit (e.g. the
+  # author-type bug fixed in 0.1.6) fails CI instead of shipping. Uses the
+  # runner's preinstalled Node to install the CLI — no Node-based action, so this
+  # stays off the deprecated action runtime like the gate job.
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate plugin & marketplace manifests
+        run: claude plugin validate .

@@ -1,7 +1,10 @@
 {
   "name": "forge",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Opinionated Python project workflow: plan → build → check → audit → release, with enforced gates, durable design directives, and docs/.env-in-sync guarantees.",
   "author": { "name": "Akshay Prabhu" },
+  "homepage": "https://github.com/prabhuakshay/forge",
+  "repository": "https://github.com/prabhuakshay/forge",
+  "license": "MIT",
   "keywords": ["python", "workflow", "quality", "uv", "ruff", "mypy", "pytest"]
 }

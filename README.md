@@ -94,7 +94,7 @@ checks run under the same toolchain it ships:
 ```bash
 uv run --group dev pytest --cov   # tests + coverage (lib/)
 uv run --group dev ruff check .   # lint
-uv run --group dev mypy lib tests # types
+uv run --group dev mypy lib tests bin # types
 ```
 
 The same gate runs at commit time via [prek](https://github.com/j178/prek)

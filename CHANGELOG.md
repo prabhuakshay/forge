@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-06-22
+
+### Added
+- Unit tests for `bin/bump.py` (resolve arithmetic, field rewriting, end-to-end).
+- CI schema-validates the plugin and marketplace manifests
+  (`claude plugin validate .`), so a bad manifest fails CI instead of shipping.
+- `homepage`, `repository`, and `license` in `.claude-plugin/plugin.json`.
+
+### Changed
+- The type-check gate now covers `bin/` too (`mypy lib tests bin`) — in the local
+  gate, the prek hooks, and CI.
+
 ## [0.1.7] - 2026-06-22
 
 ### Added
@@ -94,7 +106,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/prabhuakshay/forge/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/prabhuakshay/forge/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/prabhuakshay/forge/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/prabhuakshay/forge/compare/v0.1.4...v0.1.5
