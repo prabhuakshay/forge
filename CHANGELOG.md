@@ -6,6 +6,17 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-06-22
+
+### Added
+- Plugin marketplace manifest (`.claude-plugin/marketplace.json`) so the plugin
+  can be installed via `/plugin marketplace add prabhuakshay/forge`.
+
+### Fixed
+- `plugin.json` `author` is now an object (`{ "name": ... }`) as the plugin
+  schema requires, instead of a bare string. Verified with
+  `claude plugin validate .`.
+
 ## [0.1.5] - 2026-06-22
 
 ### Changed
@@ -75,7 +86,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/prabhuakshay/forge/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/prabhuakshay/forge/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/prabhuakshay/forge/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/prabhuakshay/forge/compare/v0.1.2...v0.1.3
