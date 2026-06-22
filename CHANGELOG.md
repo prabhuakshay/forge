@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-06-22
+
+### Added
+- `bin/bump.py` — sets the version across all three manifests
+  (`plugin.json`, `pyproject.toml`, and `marketplace.json`'s top-level and
+  per-plugin entries) in one command, so they can't drift. The release checklist
+  now uses it.
+
 ## [0.1.6] - 2026-06-22
 
 ### Added
@@ -86,7 +94,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/prabhuakshay/forge/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/prabhuakshay/forge/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/prabhuakshay/forge/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/prabhuakshay/forge/compare/v0.1.3...v0.1.4
