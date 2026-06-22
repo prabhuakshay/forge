@@ -5,3 +5,7 @@ __pycache__/
 .pytest_cache/
 .venv/
 .coverage
+
+# Claude Code local session/scheduling state (not plugin config — that's in
+# .claude-plugin/). Must never be committed.
+.claude/
