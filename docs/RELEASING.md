@@ -19,13 +19,16 @@ Semantic Versioning. Pick the bump from what changed since the last tag:
 
 - [ ] On `main`, working tree clean, up to date with `origin`.
 - [ ] Gate is green locally: `uv run --group dev ruff check . && uv run --group dev ruff format --check . && uv run --group dev mypy lib tests && uv run --group dev pytest --cov`.
+- [ ] Manifests valid: `claude plugin validate .`.
 - [ ] CI is green for the tip commit (the same gate across Python 3.10–3.13).
 
 ## Steps
 
-1. [ ] **Bump the version** in `.claude-plugin/plugin.json` (`version`) and in
-   `pyproject.toml` (`[project] version`). Keep them in agreement — they're the
-   two sources of truth for the plugin.
+1. [ ] **Bump the version** with `python3 bin/bump.py X.Y.Z` (or `patch` /
+   `minor` / `major`). One command sets the version in all three files that
+   record it — `.claude-plugin/plugin.json`, `pyproject.toml`, and
+   `.claude-plugin/marketplace.json` (its top-level version *and* each plugin
+   entry) — so they can't drift apart. Re-run `claude plugin validate .` after.
 2. [ ] **Refresh the lockfile:** run `uv lock` so `uv.lock` records the new
    version, and stage it. Skipping this gets the release commit *bounced by the
    prek hook* — `uv run` regenerates `uv.lock` mid-hook, and prek fails any hook
