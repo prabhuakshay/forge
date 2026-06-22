@@ -102,6 +102,8 @@ The same gate runs at commit time via [prek](https://github.com/j178/prek)
 uv run --group dev prek install   # then ruff + mypy + pytest run on every commit
 ```
 
+Cutting a release? Follow the checklist in [docs/RELEASING.md](docs/RELEASING.md).
+
 ## Installation
 
 Add this directory as a plugin in Claude Code, then run `/forge:init` in a Python
