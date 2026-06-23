@@ -6,6 +6,16 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-23
+
+### Changed
+- The `django` reference is restructured into two tiers: universal Django best
+  practice (blocking) and a clearly separated, droppable "house stack" section for
+  the org's opinionated library/architecture picks (django-environ, email/`full_name`
+  User, services & selectors, FBVs, simple-history, WhiteNoise, Celery+Redis,
+  debug-toolbar). A project installing the reference can drop the house tier without
+  touching the universal rules.
+
 ## [0.2.0] - 2026-06-23
 
 ### Changed
@@ -114,7 +124,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/prabhuakshay/forge/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/prabhuakshay/forge/compare/v0.1.8...v0.2.0
 [0.1.8]: https://github.com/prabhuakshay/forge/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/prabhuakshay/forge/compare/v0.1.6...v0.1.7

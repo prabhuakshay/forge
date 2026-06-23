@@ -4,13 +4,13 @@
     "name": "Akshay Prabhu"
   },
   "description": "Marketplace for the forge Python project workflow plugin.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "plugins": [
     {
       "name": "forge",
       "source": "./",
       "description": "Opinionated Python project workflow: plan → build → check → audit → release, with hook-enforced gates, durable design directives, and docs/.env-in-sync guarantees.",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "author": {
         "name": "Akshay Prabhu"
       },
