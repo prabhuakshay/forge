@@ -33,5 +33,20 @@ For each unchecked item, in order:
 If the user states a durable directive mid-build, offer `/forge:decide` to record
 it (draft + confirm) so it isn't lost.
 
-When the plan is fully checked off, summarise what changed and remind the user to
-`/forge:review` and `/forge:audit` before committing/releasing.
+## Documentation coverage (opt-out)
+
+When the plan is fully checked off and `/forge:check` is green, run `/forge:docs`
+on the source root to fill any documentation gaps the new code introduced.
+
+Skip this step only when:
+- `$ARGUMENTS` contains `--no-docs`, OR
+- the change touched only tests, docs, config, or tooling (no production source
+  changed).
+
+If `/forge:docs` edits any files, re-run `/forge:check` to confirm the gate is
+still green before summarising.
+
+## Wrap-up
+
+Summarise what changed and remind the user to `/forge:review` and `/forge:audit`
+before committing/releasing.
