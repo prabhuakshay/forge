@@ -24,8 +24,14 @@ not attempt to bypass that — resolve drift instead.
    <date>` section. If anything notable since the last tag is missing, add it —
    warn the user rather than shipping an incomplete changelog.
 4. **Build:** `uv build`. Confirm the artifacts.
-5. **Tag & publish** only if the user asked to publish: create the version tag and
-   `uv publish` (or the project's configured target). Publishing is outward-facing
-   and irreversible — confirm with the user before this step.
+5. **Tag** only if the user asked to publish: create the annotated version tag
+   (`git tag -a vX.Y.Z`) and push it. Publishing is outward-facing and
+   irreversible — confirm with the user before this and the steps below.
+6. **Publish the package:** `uv publish` (or the project's configured target).
+   Skip if the project isn't distributed as a package.
+7. **Create the GitHub release** if the repo has a GitHub remote: `gh release
+   create vX.Y.Z --title "vX.Y.Z" --notes-file <notes>`, using the changelog
+   section from step 3 as the notes. Skip if there's no GitHub remote.
 
-Report the new version, the changelog section, and what was (or wasn't) published.
+Report the new version, the changelog section, and what was (or wasn't) published
+— both to the package target and to GitHub.

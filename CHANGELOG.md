@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-23
+
+### Changed
+- `/forge:release` now creates a GitHub release (`gh release create`) as a
+  distinct step when the repo has a GitHub remote, alongside the package publish.
+  Tagging, package publish, and GitHub release are now separate steps so a
+  project can do any subset.
+
 ## [0.1.8] - 2026-06-22
 
 ### Added
@@ -106,7 +114,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/prabhuakshay/forge/compare/v0.1.8...v0.2.0
 [0.1.8]: https://github.com/prabhuakshay/forge/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/prabhuakshay/forge/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/prabhuakshay/forge/compare/v0.1.5...v0.1.6
