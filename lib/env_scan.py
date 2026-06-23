@@ -46,7 +46,10 @@ _SKIP_DIRS = {
     "build",
     "dist",
     ".forge",
+    "tests",
 }
+
+_COMMENT = re.compile(r"(?m)#[^\n]*")
 
 
 @dataclass
@@ -79,9 +82,11 @@ def scan_code(project_dir: str) -> set[str]:
                 text = fh.read()
         except OSError:
             continue
-        found.update(_OS_ENV.findall(text))
-        found.update(_GETENV.findall(text))
-        found.update(_settings_fields(text))
+        # Strip line comments so patterns in docstrings/comments don't fire.
+        stripped = _COMMENT.sub("", text)
+        found.update(_OS_ENV.findall(stripped))
+        found.update(_GETENV.findall(stripped))
+        found.update(_settings_fields(stripped))
     return found
 
 
