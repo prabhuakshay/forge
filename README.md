@@ -54,7 +54,8 @@ override trail in `.forge/state.json`. `/forge:status` shows what's armed before
 fires and the full history after.
 
 The type check (mypy) only runs when the project actually configures it — a
-`[tool.mypy]` table, a `mypy.ini`, or a `[mypy]` section in `setup.cfg`. A project
+`[tool.mypy]` table, a `mypy.ini`/`.mypy.ini`, or a `[mypy]` section in
+`setup.cfg`. A project
 that doesn't type-check isn't forced red on a tool it doesn't use; forge-scaffolded
 projects ship the config, so they stay covered.
 

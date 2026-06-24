@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-24
+
 ### Added
 - **`/forge:status`** — a one-screen snapshot of where a project stands: phase
   and active plan, each gate (`check`/`audit`) as green-for-the-current-tree /
@@ -207,7 +209,9 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/prabhuakshay/forge/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/prabhuakshay/forge/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/prabhuakshay/forge/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/prabhuakshay/forge/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/prabhuakshay/forge/compare/v0.1.8...v0.2.0
