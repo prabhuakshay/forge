@@ -27,6 +27,7 @@ come out consistent, stable, well-documented, and honest about their own state.
 | `/forge:release` | Version bump, changelog, build, publish | — |
 | `/forge:decide` | Record a durable directive + ADR | binds all future work |
 | `/forge:reference` | Install/author scoped style references (django, cli, …) | catches style drift |
+| `/forge:docs` | Crawl codebase, find undocumented features, write/expand markdown in docs/ | — |
 
 ## What makes it stick
 
@@ -76,10 +77,10 @@ the project's environment exists.
 
 ```
 .claude-plugin/plugin.json   manifest
-commands/                    the 9 workflow commands
-agents/                      doc-sync, quality, test-author, reference auditors
+commands/                    the 10 workflow commands
+agents/                      doc-sync, doc-gap-scanner, quality, test-author, reference auditors
 hooks/                       hooks.json + enforcement & injection scripts
-lib/                         stdlib-only core (state, gate, env_scan, doc_claims, decisions, references, cmdscan)
+lib/                         stdlib-only core (state, gate, env_scan, doc_claims, decisions, references, cmdscan, hookio)
 bin/                         CLI entrypoints the commands call
 references/                  starter style-reference library (django, cli, python-base)
 templates/                   artifacts /forge:init scaffolds into a project

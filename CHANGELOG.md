@@ -6,6 +6,24 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-24
+
+### Added
+- `/forge:docs` command — crawls the codebase to find features with missing or
+  thin markdown documentation, then writes or expands the relevant sections in
+  `docs/` and `README.md`. Runs as an opt-out step at the end of `/forge:build`
+  (skip with `--no-docs`).
+- `doc-gap-scanner` agent (Haiku) — inventories what exists in the codebase vs
+  what is covered in docs, returning a structured gap list for `/forge:docs`.
+
+### Fixed
+- `env_scan` false positives: test files (`tests/`) are now excluded from env-var
+  scanning, and line comments are stripped before the regex runs. Previously,
+  fixture strings in `test_env_scan.py` and example patterns in `env_scan.py`'s
+  own comments were flagged as undocumented config.
+- Added `.env.example` to the forge repo itself (forge has no runtime env config;
+  the file is required by the audit scaffolding check).
+
 ## [0.2.1] - 2026-06-23
 
 ### Changed
@@ -124,7 +142,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/prabhuakshay/forge/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/prabhuakshay/forge/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/prabhuakshay/forge/compare/v0.1.8...v0.2.0
 [0.1.8]: https://github.com/prabhuakshay/forge/compare/v0.1.7...v0.1.8
