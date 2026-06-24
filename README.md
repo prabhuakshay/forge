@@ -58,7 +58,8 @@ which is grounded by design: it only reports doc↔code drift it can tie to a
 
 **Style stays consistent via scoped references.** Install convention guides
 (`/forge:reference add django`) that govern a subset of files by glob — `django.md`
-covers your Django code, `cli.md` your CLI code, `python-base.md` everything. They
+covers your Django code, `cli.md` your CLI code, `python-base.md` all Python
+source (`src/**/*.py` by default — tune the glob for your layout). They
 work two ways: the relevant reference is **injected into context the moment you
 edit a file it governs** (once per session), and the grounded `reference-auditor`
 checks changed files against them at review time. A `blocking` reference's rules

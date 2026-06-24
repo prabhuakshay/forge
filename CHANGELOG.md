@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-24
+
 ### Added
 - **uv-only dependency enforcement.** A new `require_uv` PreToolUse hook blocks
   non-uv dependency commands (`pip install`, `uv pip install`, `poetry`/`pipenv`,
