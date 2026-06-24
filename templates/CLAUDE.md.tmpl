@@ -11,6 +11,10 @@ This project uses the **forge** workflow. The loop is:
 - **Source** lives in `src/{{PACKAGE}}/`, tests in `tests/`.
 - **Toolchain:** `uv` (env/deps), `ruff` (lint+format), `mypy` (types), `pytest`
   (tests), `prek` (git hooks). Run anything with `uv run <tool>`.
+- **uv is the only dependency manager.** Add deps with `uv add <pkg>` (dev:
+  `uv add --group dev <pkg>`), remove with `uv remove <pkg>`. Never pip,
+  `requirements.txt`, `uv pip install`, or hand-edited `pyproject` deps — this
+  is enforced by a hook (`.forge/override-uv` is the logged escape hatch).
 - **The gates are enforced, not advisory.** You cannot commit unless
   `/forge:check` is green, or push/publish unless `/forge:audit` is green.
 

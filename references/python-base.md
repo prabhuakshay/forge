@@ -38,3 +38,8 @@ against these; violations in governed files are blocking.
 ## Dependencies
 - Don't reach for a new third-party dep when the stdlib covers it.
 - Import at module top level unless there's a real reason (cycle, optional dep).
+- **uv is the only dependency manager.** Add deps with `uv add <pkg>` (dev deps:
+  `uv add --group dev <pkg>`), remove with `uv remove <pkg>`. Never use pip,
+  `uv pip install`, a `requirements.txt`, or hand-edit the `[project]`
+  dependency lists in `pyproject.toml` — uv records every change in
+  `pyproject.toml` and `uv.lock`, and the lockfile is the source of truth.

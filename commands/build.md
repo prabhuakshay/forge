@@ -24,6 +24,9 @@ For each unchecked item, in order:
    delegate to the `python-test-author` agent.
 2. **Implement** the smallest code that satisfies the item and its tests. Match
    the surrounding code's style, naming, and comment density. Comment the *why*.
+   Need a new dependency? Add it with `uv add <pkg>` (dev: `uv add --group dev
+   <pkg>`) — never pip, a `requirements.txt`, or a hand-edited pyproject; the
+   require_uv hook enforces this.
 3. **Keep docs honest in the same step:** if behaviour, config, CLI, or public
    API changed, update `docs/` and `.env.example` now — not later.
 4. **Run `/forge:check`.** Fix until green. Only then tick the checklist item.

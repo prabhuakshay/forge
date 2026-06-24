@@ -6,6 +6,19 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **uv-only dependency enforcement.** A new `require_uv` PreToolUse hook blocks
+  non-uv dependency commands (`pip install`, `uv pip install`, `poetry`/`pipenv`,
+  `conda`, `pip-compile`, `easy_install`, …) in forge-enabled projects, steering
+  all dependency changes through `uv add`/`uv remove` so `pyproject.toml` and
+  `uv.lock` stay the single source of truth. Read-only commands (`pip list`,
+  `uv pip freeze`) are untouched, and `.forge/override-uv` is the logged one-shot
+  escape hatch. The policy is also stated as a binding rule in the `python-base`
+  reference and the scaffolded `CLAUDE.md`.
+- `cmdscan.dep_install_command()` — parses a Bash line and names the first
+  non-uv dependency invocation it finds (reusing the tokenizer behind the
+  commit/push guards).
+
 ## [0.3.0] - 2026-06-24
 
 ### Added

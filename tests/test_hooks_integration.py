@@ -115,6 +115,57 @@ def test_push_allowed_when_audit_green(project):
     assert run.decision is None and run.code == 0
 
 
+# --- require_uv (PreToolUse / dependency commands) -----------------------
+
+
+def _pip(project):
+    return {"cwd": project, "tool_input": {"command": "pip install requests"}}
+
+
+def test_pip_install_blocked(project):
+    run = run_hook("require_uv", _pip(project))
+    assert run.decision["hookSpecificOutput"]["permissionDecision"] == "deny"
+    assert "uv add" in run.decision["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_uv_add_is_allowed(project):
+    run = run_hook(
+        "require_uv",
+        {"cwd": project, "tool_input": {"command": "uv add requests"}},
+    )
+    assert run.decision is None and run.code == 0
+
+
+def test_uv_pip_install_blocked(project):
+    run = run_hook(
+        "require_uv",
+        {"cwd": project, "tool_input": {"command": "uv pip install requests"}},
+    )
+    assert run.decision["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+
+def test_non_dep_command_is_ignored_by_require_uv(project):
+    run = run_hook("require_uv", {"cwd": project, "tool_input": {"command": "ls -la"}})
+    assert run.decision is None
+
+
+def test_require_uv_ignores_non_forge_project(tmp_path):
+    proj = str(tmp_path)  # no .forge/
+    run = run_hook("require_uv", {"cwd": proj, "tool_input": _pip(proj)["tool_input"]})
+    assert run.decision is None and run.code == 0
+
+
+def test_uv_override_is_consumed_and_logged(project):
+    write(project, ".forge/override-uv", "vendored wheel, one-off")
+    run = run_hook("require_uv", _pip(project))
+
+    assert run.decision is None  # allowed
+    assert not os.path.exists(_at(project, ".forge/override-uv"))  # consumed
+    overrides = state.load(project)["overrides"]
+    assert overrides[-1]["gate"] == "uv"
+    assert overrides[-1]["reason"] == "vendored wheel, one-off"
+
+
 # --- hardened parsing, end to end through the real hook ------------------
 
 

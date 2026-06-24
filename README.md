@@ -36,8 +36,9 @@ come out consistent, stable, well-documented, and honest about their own state.
 - **PostToolUse** auto-formats every `.py` you touch (`ruff format` + safe fixes)
   and invalidates any stale "green" result.
 - **PreToolUse** blocks `git commit` unless `/forge:check` is green for the current
-  tree, blocks `git push`/publish unless `/forge:audit` is green, and blocks source
-  edits with no active plan.
+  tree, blocks `git push`/publish unless `/forge:audit` is green, blocks source
+  edits with no active plan, and blocks non-uv dependency commands (pip,
+  `uv pip install`, requirements files) — deps go through `uv add`/`uv remove`.
 - **Stop** won't let the agent end a turn on a broken tree (lint/types red, or env
   vars read in code but undocumented in `.env.example`).
 - **SessionStart** injects the project's binding directives into every session.

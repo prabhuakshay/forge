@@ -118,6 +118,60 @@ def test_ignores_non_publish(command):
     assert not cmdscan.runs_publish(command)
 
 
+# --- non-uv dependency commands: must catch ------------------------------
+
+
+@pytest.mark.parametrize(
+    ("command", "label"),
+    [
+        ("pip install requests", "pip install"),
+        ("pip3 install -r requirements.txt", "pip install"),
+        ("pip uninstall flask", "pip uninstall"),
+        ("python -m pip install requests", "python -m pip install"),
+        ("python3 -m pip uninstall -y requests", "python -m pip uninstall"),
+        ("uv pip install requests", "uv pip install"),
+        ("uv pip sync requirements.txt", "uv pip sync"),
+        ("poetry add httpx", "poetry add"),
+        ("poetry install", "poetry install"),
+        ("pipenv install requests", "pipenv install"),
+        ("conda install numpy", "conda install"),
+        ("mamba install scipy", "mamba install"),
+        ("pip-compile", "pip-compile"),
+        ("easy_install pytz", "easy_install"),
+        ("cd app && pip install requests", "pip install"),  # second segment
+        ("bash -c 'pip install requests'", "pip install"),  # nested shell
+        ("VIRTUAL_ENV=x pip install requests", "pip install"),  # env prefix
+    ],
+)
+def test_detects_non_uv_dep_command(command, label):
+    assert cmdscan.dep_install_command(command) == label
+
+
+# --- non-uv dependency commands: must NOT fire ---------------------------
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uv add requests",  # the blessed path
+        "uv add --group dev pytest",
+        "uv remove flask",
+        "uv sync --all-extras",
+        "uv lock",
+        "uv run pytest",
+        "uv pip list",  # read-only, not mutating
+        "uv pip freeze",
+        "pip list",
+        "pip show requests",
+        "python -m pytest",  # -m, but not pip
+        "echo 'pip install requests'",  # quoted, not a command
+        "git commit -m 'switch from pip install to uv add'",  # message mention
+    ],
+)
+def test_ignores_non_dep_or_uv_commands(command):
+    assert cmdscan.dep_install_command(command) is None
+
+
 # --- lower-level helpers --------------------------------------------------
 
 

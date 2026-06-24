@@ -190,6 +190,67 @@ def runs_git_subcommand(command: str, subcommand: str) -> bool:
     )
 
 
+def _arg_after(args: list[str], marker: str) -> str | None:
+    """First non-option token following the first `marker` token, or None.
+
+    Lets us read the subcommand out of `uv pip install` / `python -m pip install`
+    by anchoring on the `pip` token rather than position 0."""
+    try:
+        i = args.index(marker)
+    except ValueError:
+        return None
+    return _first_arg(args[i + 1 :])
+
+
+# Mutating subcommands per tool — the ones that install/remove/lock dependencies
+# (as opposed to read-only `list`/`show`/`freeze`, which we leave alone).
+_PIP_MUTATING = {"install", "uninstall", "download"}
+_UV_PIP_MUTATING = {"install", "uninstall", "sync"}
+_POETRY_MUTATING = {"add", "remove", "install", "update", "lock", "sync"}
+_PIPENV_MUTATING = {"install", "uninstall", "update", "lock", "sync"}
+_CONDA_MUTATING = {"install", "remove", "uninstall", "update", "create"}
+
+
+def dep_install_command(command: str) -> str | None:
+    """The first non-uv dependency-management invocation in `command`, named for
+    a message (e.g. 'pip install', 'uv pip install', 'poetry add'), or None.
+
+    Forge mandates uv as the single dependency manager: dependencies are added
+    with `uv add` (recorded in pyproject.toml + uv.lock) and removed with
+    `uv remove` — never pip, a requirements file, or a hand-edited pyproject. The
+    require_uv gate refuses the alternatives. We flag only the *mutating*
+    subcommands; inspection commands (`pip list`, `uv pip freeze`) are untouched.
+    Note `uv pip install` IS flagged: it writes to the venv without recording the
+    dependency, which is exactly the bypass `uv add` exists to prevent.
+    """
+    for toks in iter_commands(command):
+        if not toks:
+            continue
+        prog = _basename(toks[0])
+        rest = toks[1:]
+        first = _first_arg(rest)
+
+        if prog in {"pip", "pip3"} and first in _PIP_MUTATING:
+            return f"pip {first}"
+        if prog in {"python", "python3"} and _has_module(rest, "pip"):
+            sub = _arg_after(rest, "pip")
+            if sub in _PIP_MUTATING:
+                return f"python -m pip {sub}"
+        if prog == "uv" and first == "pip":
+            sub = _arg_after(rest, "pip")
+            if sub in _UV_PIP_MUTATING:
+                return f"uv pip {sub}"
+        if prog == "poetry" and first in _POETRY_MUTATING:
+            return f"poetry {first}"
+        if prog == "pipenv" and first in _PIPENV_MUTATING:
+            return f"pipenv {first}"
+        if prog in {"conda", "mamba", "micromamba"} and first in _CONDA_MUTATING:
+            return f"{prog} {first}"
+        if prog in {"pip-compile", "pip-sync", "easy_install"}:
+            return prog
+    return None
+
+
 def runs_publish(command: str) -> bool:
     """True if any command builds or publishes a distribution (the non-git half
     of the release gate): uv build/publish, python -m build, twine upload, and
