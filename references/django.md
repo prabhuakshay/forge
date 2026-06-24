@@ -28,6 +28,14 @@ default library and architecture picks — expected in our projects, but the
 swappable tier: a new project can drop or replace any of them on install without
 touching the universal rules above them.
 
+Jump to: [Universal conventions](#universal-conventions-blocking) ·
+[House stack](#house-stack-opinionated-defaults).
+
+# Universal conventions (blocking)
+
+Everything from here down to the `House stack` divider applies to any Django
+project and is enforced as blocking.
+
 ## Guiding principle
 - **Prefer simple, stable, readable code over clever or terse code.** If a junior
   has to think hard to follow it, rewrite it. Boring and obvious beats short and

@@ -15,14 +15,22 @@ def test_read_input_parses_json(monkeypatch):
     assert hookio.read_input() == {"cwd": "/x"}
 
 
-def test_read_input_tolerates_garbage(monkeypatch):
+def test_read_input_tolerates_garbage(monkeypatch, capsys):
     monkeypatch.setattr("sys.stdin", io.StringIO("not json at all"))
     assert hookio.read_input() == {}  # fail open, never wedge the gated call
+    # ...but non-empty unparseable input leaves a diagnostic trace on stderr.
+    assert "unparseable" in capsys.readouterr().err
 
 
-def test_read_input_empty(monkeypatch):
+def test_read_input_empty_is_silent(monkeypatch, capsys):
     monkeypatch.setattr("sys.stdin", io.StringIO(""))
     assert hookio.read_input() == {}
+    assert capsys.readouterr().err == ""  # empty stdin is normal, not an anomaly
+
+
+def test_read_input_non_dict_json_becomes_empty(monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO("[1, 2, 3]"))
+    assert hookio.read_input() == {}  # callers expect a dict payload
 
 
 def test_project_dir_defaults_to_cwd_marker():

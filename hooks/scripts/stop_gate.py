@@ -64,8 +64,8 @@ def main() -> None:
         hookio.block_stop(
             "Don't stop yet — fix these first, then finish:\n\n"
             + "\n\n".join(problems)
-            + "\n\n(If this is a deliberate stopping point, create "
-            ".forge/override-stop and end again.)"
+            + "\n\n(If this is a deliberate stopping point, run "
+            '/forge:override stop "<why>" and end again — the bypass is logged.)'
         )
 
 

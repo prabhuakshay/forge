@@ -55,8 +55,7 @@ def main() -> None:
     hookio.deny(
         "No active plan for this project. Source edits should follow a plan.\n"
         "Run /forge:plan to spec the change first, or — for a genuinely trivial "
-        "fix — create .forge/override-plan (optionally with a one-line reason) "
-        "and retry."
+        'fix — run /forge:override plan "<why>" (the bypass is logged) and retry.'
     )
 
 

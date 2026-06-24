@@ -121,6 +121,8 @@ def test_auto_format_ignores_non_python(project, faketools):
 
 
 def test_stop_blocks_on_type_error_in_dirty_file(project, faketools):
+    # The type step is opt-in by config, so a type-checked project declares mypy.
+    write(project, "pyproject.toml", "[tool.mypy]\n")
     write(project, "src/app.py", "x = 1\n")
     state.add_dirty(project, "src/app.py")
     run = run_hook(

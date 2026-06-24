@@ -28,6 +28,8 @@ come out consistent, stable, well-documented, and honest about their own state.
 | `/forge:decide` | Record a durable directive + ADR | binds all future work |
 | `/forge:reference` | Install/author scoped style references (django, cli, …) | catches style drift |
 | `/forge:docs` | Crawl codebase, find undocumented features, write/expand markdown in docs/ | — |
+| `/forge:status` | Snapshot of where the project stands: gates, dirty set, references, overrides | — |
+| `/forge:override` | Arm a one-shot, logged bypass of a gate (check, audit, stop, plan, uv) | the audited escape hatch |
 
 ## What makes it stick
 
@@ -40,11 +42,21 @@ come out consistent, stable, well-documented, and honest about their own state.
   edits with no active plan, and blocks non-uv dependency commands (pip,
   `uv pip install`, requirements files) — deps go through `uv add`/`uv remove`.
 - **Stop** won't let the agent end a turn on a broken tree (lint/types red, or env
-  vars read in code but undocumented in `.env.example`).
+  vars read in code but undocumented in `.env.example`). If a broken state is a
+  *deliberate* stopping point, `/forge:override stop "<why>"` releases it (logged).
 - **SessionStart** injects the project's binding directives into every session.
 
-Every block has a **logged one-shot override** (`.forge/override-<gate>`) so a real
-hotfix is never held hostage — but the bypass is recorded, never silent.
+Every block has a **logged one-shot override** so a real hotfix is never held
+hostage — but the bypass is recorded, never silent. Arm one with `/forge:override
+<gate> "<why>"` (or by writing the sentinel `.forge/override-<gate>` by hand); the
+next matching gated action is allowed exactly once and the skip is appended to the
+override trail in `.forge/state.json`. `/forge:status` shows what's armed before it
+fires and the full history after.
+
+The type check (mypy) only runs when the project actually configures it — a
+`[tool.mypy]` table, a `mypy.ini`, or a `[mypy]` section in `setup.cfg`. A project
+that doesn't type-check isn't forced red on a tool it doesn't use; forge-scaffolded
+projects ship the config, so they stay covered.
 
 **Durable intent is captured, not lost.** When you tell the agent how something
 must be designed, `/forge:decide` writes it as a binding directive
@@ -79,7 +91,7 @@ the project's environment exists.
 
 ```
 .claude-plugin/plugin.json   manifest
-commands/                    the 10 workflow commands
+commands/                    the workflow commands
 agents/                      doc-sync, doc-gap-scanner, quality, test-author, reference auditors
 hooks/                       hooks.json + enforcement & injection scripts
 lib/                         stdlib-only core (state, gate, env_scan, doc_claims, decisions, references, cmdscan, hookio)
@@ -88,6 +100,10 @@ references/                  starter style-reference library (django, cli, pytho
 templates/                   artifacts /forge:init scaffolds into a project
 tests/                       the plugin's own test suite (stdlib + pytest)
 ```
+
+Per-project workflow state lives in `.forge/state.json`; its schema (gate
+fingerprints, the dirty set, the override trail) is documented in
+[docs/state-schema.md](docs/state-schema.md).
 
 ## Developing the plugin
 

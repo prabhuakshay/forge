@@ -6,6 +6,56 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **`/forge:status`** — a one-screen snapshot of where a project stands: phase
+  and active plan, each gate (`check`/`audit`) as green-for-the-current-tree /
+  stale / never-run, the dirty set, installed style references, the binding
+  directive count, plus any *armed* one-shot override (about to fire) and recent
+  override history. Pure read; the report builder lives in `lib/status.py`.
+- **`/forge:override <gate> "<reason>"`** — an ergonomic, logged front door to
+  the one-shot bypass mechanism the hooks already honour (gates: `check`,
+  `audit`, `stop`, `plan`, `uv`). It arms `.forge/override-<gate>` with the
+  reason baked in; the next matching gated action consumes it and records the
+  bypass. Writing the sentinel by hand still works. The hook deny messages and
+  `docs/state-schema.md` now point at the command.
+- **`.forge/state.json` schema reference** ([docs/state-schema.md](docs/state-schema.md)):
+  documents every key (gate fingerprint records, the dirty set, the override
+  trail, per-session reference-injection tracking) and the override sentinel
+  files, linked from the README.
+- `bin/` CLI entrypoints now have a dedicated subprocess test suite
+  (`tests/test_bin.py`) covering `check`, `mark`, `audit`, `refs`, `decide`, and
+  `doc_claims` — previously only `bump` was tested.
+- `FORGE_GATE_TIMEOUT` environment variable overrides the per-step gate
+  subprocess timeout (default 600s) for projects whose suite runs long.
+
+### Changed
+- The **type-check step is now opt-in by configuration**. mypy runs only when the
+  project configures it (`[tool.mypy]`, `mypy.ini`/`.mypy.ini`, or a `[mypy]`
+  section in `setup.cfg`); otherwise the step is *skipped*, not failed. Previously
+  `uv run mypy` on a project that never installed mypy would fail the gate for a
+  tool it deliberately doesn't use. forge-scaffolded projects ship `[tool.mypy]`,
+  so they keep type-checking unchanged.
+- `/forge:check` no longer overrides a project's own coverage floor. forge's
+  default `--cov-fail-under=80` is now applied only when the project doesn't
+  declare its own `fail_under` (or `--cov-fail-under` in addopts), so a stricter
+  project floor is never silently lowered.
+- The `reference-auditor` now resolves overlapping references deterministically:
+  `refs.py applicable` lists governing references most-specific-first (narrowest
+  glob wins; `blocking` beats `advisory` on ties), and the agent prompt documents
+  the precedence rule.
+
+### Fixed
+- `env_scan` now detects pydantic-settings fields at any indentation (tabs,
+  2-space, 4-space), not only exactly 4 spaces, and ignores env reads that appear
+  inside docstrings/triple-quoted strings — closing two drift-detection blind
+  spots.
+- `cmdscan` strips shell redirections (`2>`, `&>`, `>&`, `> file`) from parsed
+  commands so a redirect target/fd can no longer leak into a command's argument
+  list.
+- `hookio.read_input` leaves a one-line stderr diagnostic when non-empty stdin
+  fails to parse (instead of silently swallowing it) and coerces non-dict JSON to
+  an empty payload; empty stdin stays silent.
+
 ## [0.4.0] - 2026-06-24
 
 ### Added

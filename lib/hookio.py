@@ -17,13 +17,24 @@ def read_input() -> dict[str, Any]:
 
     Returns an empty dict on malformed/empty input rather than raising: a hook
     that crashes on bad input would wedge the tool call it gates, so we fail
-    open and let the caller decide what a missing field means.
+    open and let the caller decide what a missing field means. Empty stdin is a
+    normal case and stays silent, but *non-empty* input that won't parse is a
+    real anomaly (truncated stdin, a protocol change) — we still fail open, yet
+    leave a one-line trace on stderr so the skipped gate is diagnosable instead
+    of vanishing without a sound.
     """
     try:
         raw = sys.stdin.read()
-        return json.loads(raw) if raw.strip() else {}
-    except (json.JSONDecodeError, ValueError):
+    except (OSError, ValueError):
         return {}
+    if not raw.strip():
+        return {}
+    try:
+        data = json.loads(raw)
+    except (json.JSONDecodeError, ValueError):
+        print("forge: ignoring unparseable hook input on stdin", file=sys.stderr)
+        return {}
+    return data if isinstance(data, dict) else {}
 
 
 def project_dir(payload: dict[str, Any]) -> str:

@@ -49,8 +49,11 @@ def _capture_cmd(monkeypatch):
         seen.append(cmd)
         return types.SimpleNamespace(returncode=0, stdout="", stderr="")
 
-    # Pretend uv is on PATH so the runner prefix is deterministic.
+    # Pretend uv is on PATH so the runner prefix is deterministic, and that the
+    # project configures mypy so run_types actually invokes it (its detection is
+    # exercised separately below).
     monkeypatch.setattr(gate.shutil, "which", lambda tool: "/usr/bin/uv")
+    monkeypatch.setattr(gate, "_uses_mypy", lambda project_dir: True)
     monkeypatch.setattr(gate.subprocess, "run", fake_run)
     return seen
 
@@ -80,3 +83,89 @@ def test_run_skips_missing_tool_without_uv(monkeypatch):
     monkeypatch.setattr(gate.shutil, "which", lambda tool: None)
     step = gate.run_lint("/proj")
     assert step.skipped and not step.ok
+
+
+# --- mypy is opt-in by configuration --------------------------------------
+
+
+def test_run_types_skips_when_project_has_no_mypy_config(tmp_path):
+    """A project that doesn't configure mypy must not be failed on a tool it
+    doesn't use — the step is skipped, not red."""
+    step = gate.run_types(str(tmp_path))
+    assert step.skipped and not step.ok
+    assert "no mypy configuration" in step.output
+
+
+def test_run_types_runs_when_pyproject_declares_mypy(monkeypatch, tmp_path):
+    """With real detection (no _uses_mypy override), a `[tool.mypy]` table makes
+    the type step actually invoke mypy rather than skip."""
+    (tmp_path / "pyproject.toml").write_text('[tool.mypy]\npython_version = "3.10"\n')
+    seen: list[list[str]] = []
+    monkeypatch.setattr(gate.shutil, "which", lambda tool: "/usr/bin/uv")
+    monkeypatch.setattr(
+        gate.subprocess,
+        "run",
+        lambda cmd, **kw: (
+            seen.append(cmd)
+            or types.SimpleNamespace(returncode=0, stdout="", stderr="")
+        ),
+    )
+    gate.run_types(str(tmp_path))
+    assert seen == [["uv", "run", "mypy", "."]]
+
+
+def test_uses_mypy_detects_each_config_source(tmp_path):
+    assert not gate._uses_mypy(str(tmp_path))  # nothing configured
+    (tmp_path / "mypy.ini").write_text("[mypy]\n")
+    assert gate._uses_mypy(str(tmp_path))
+
+
+def test_uses_mypy_detects_setup_cfg_section(tmp_path):
+    (tmp_path / "setup.cfg").write_text("[metadata]\nname = x\n\n[mypy]\n")
+    assert gate._uses_mypy(str(tmp_path))
+
+
+# --- coverage floor: respect a project's own setting ----------------------
+
+
+def test_run_tests_applies_default_floor_when_project_has_none(monkeypatch, tmp_path):
+    seen = _capture_cmd(monkeypatch)
+    gate.run_tests(str(tmp_path))  # no pyproject.toml at all
+    assert f"--cov-fail-under={gate.COVERAGE_FAIL_UNDER}" in seen[0]
+
+
+def test_run_tests_omits_floor_when_project_sets_fail_under(monkeypatch, tmp_path):
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.coverage.report]\nfail_under = 95\n"
+    )
+    seen = _capture_cmd(monkeypatch)
+    gate.run_tests(str(tmp_path))
+    # We must not override (and thereby lower) the project's stricter floor.
+    assert not any(a.startswith("--cov-fail-under") for a in seen[0])
+
+
+def test_run_tests_omits_floor_when_addopts_sets_it(monkeypatch, tmp_path):
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.pytest.ini_options]\naddopts = "--cov=pkg --cov-fail-under=90"\n'
+    )
+    seen = _capture_cmd(monkeypatch)
+    gate.run_tests(str(tmp_path))
+    assert not any(a.startswith("--cov-fail-under") for a in seen[0])
+
+
+# --- configurable subprocess timeout --------------------------------------
+
+
+def test_timeout_defaults_to_600(monkeypatch):
+    monkeypatch.delenv("FORGE_GATE_TIMEOUT", raising=False)
+    assert gate._timeout() == 600
+
+
+def test_timeout_honours_env_override(monkeypatch):
+    monkeypatch.setenv("FORGE_GATE_TIMEOUT", "30")
+    assert gate._timeout() == 30
+
+
+def test_timeout_falls_back_on_garbage(monkeypatch):
+    monkeypatch.setenv("FORGE_GATE_TIMEOUT", "not-a-number")
+    assert gate._timeout() == 600

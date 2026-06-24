@@ -41,8 +41,8 @@ def main() -> None:
         "Project audit is not green for the current tree. Push/publish blocked.\n"
         "Run /forge:audit and resolve any drift (docs↔code, .env, lockfile, "
         "deps, metadata), then retry.\n"
-        "To bypass deliberately, create .forge/override-audit with a one-line "
-        "justification (it will be logged) and retry."
+        "To bypass deliberately, run /forge:override audit "
+        '"<why>" (the bypass is logged) and retry.'
     )
 
 

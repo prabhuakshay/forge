@@ -189,3 +189,32 @@ def test_iter_commands_recurses_into_shell_c():
 def test_malformed_quotes_do_not_raise():
     # An unbalanced quote must degrade gracefully, never crash the hook.
     assert cmdscan.runs_git_subcommand('git commit -m "oops', "commit")
+
+
+# --- redirections don't leak into the parsed command ----------------------
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git commit -m x > out.log",
+        "git commit -m x 2> err.log",  # fd-prefixed redirection
+        "git commit -m x 2>> err.log",
+        "git commit -m x &> all.log",  # combined redirection
+        "git commit -m x 2>&1",  # fd duplication
+        "git commit -m x > out 2> err",  # multiple redirections
+    ],
+)
+def test_redirections_are_stripped_but_command_still_detected(command):
+    assert cmdscan.runs_git_subcommand(command, "commit")
+
+
+def test_redirection_target_is_not_kept_as_an_argument():
+    # The redirect operator, its fd, and its target all drop out — what's left
+    # is exactly the command and its real arguments.
+    assert cmdscan.iter_commands("echo hi 2> /dev/null") == [["echo", "hi"]]
+    assert cmdscan.iter_commands("uv build > dist.log") == [["uv", "build"]]
+
+
+def test_publish_still_detected_with_redirection():
+    assert cmdscan.runs_publish("uv build > /tmp/build.log 2>&1")

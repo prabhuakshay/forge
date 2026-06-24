@@ -38,8 +38,8 @@ def main() -> None:
     hookio.deny(
         "Code gate is not green for the current tree. Commit blocked.\n"
         "Run /forge:check and fix any failures (ruff, mypy, pytest), then commit.\n"
-        "To bypass for a deliberate reason, create .forge/override-check with a "
-        "one-line justification (it will be logged) and retry."
+        "To bypass for a deliberate reason, run /forge:override check "
+        '"<why>" (the bypass is logged) and retry.'
     )
 
 

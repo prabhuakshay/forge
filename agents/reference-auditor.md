@@ -19,6 +19,13 @@ file only if the file matches its globs. To see which references govern a path:
 python3 "$CLAUDE_PLUGIN_ROOT/bin/refs.py" applicable <path>
 ```
 
+`refs.py applicable` lists governing references **most specific first** (narrowest
+matching glob first). When two references give conflicting rules for the same file,
+the more specific one wins — e.g. a `src/**/cli.py` reference overrides a broad
+`src/**/*.py` one. If their enforcement levels differ on the same point, `blocking`
+takes precedence over `advisory`. Report the violation against the rule that wins;
+don't flag the file twice for the same conflict.
+
 ## Method
 
 1. Determine the changed files (`git diff --name-only`, `git status`) unless given

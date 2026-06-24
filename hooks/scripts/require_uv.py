@@ -39,8 +39,8 @@ def main() -> None:
         "remove with `uv remove <pkg>`. uv records the change in pyproject.toml "
         "and uv.lock for you — never use pip, requirements files, `uv pip "
         "install`, or hand-edit the pyproject dependency lists.\n"
-        "To bypass for a deliberate reason, create .forge/override-uv with a "
-        "one-line justification (it will be logged) and retry."
+        "To bypass for a deliberate reason, run /forge:override uv "
+        '"<why>" (the bypass is logged) and retry.'
     )
 
 

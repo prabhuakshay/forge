@@ -69,6 +69,32 @@ def test_index_block_lists_installed(project):
     assert "django [blocking]" in block
 
 
+def test_for_file_orders_most_specific_first(project):
+    # A broad reference and a narrow one both govern src/app/cli.py; the narrower
+    # glob must win the ordering so a conflict resolves to the specific rule.
+    write(
+        project,
+        ".forge/references/python-base.md",
+        '---\nname: python-base\napplies_to: ["src/**/*.py"]\nenforcement: advisory\n---\nbase\n',
+    )
+    write(
+        project,
+        ".forge/references/cli.md",
+        '---\nname: cli\napplies_to: ["src/**/cli.py"]\nenforcement: blocking\n---\ncli\n',
+    )
+    matched = references.for_file(project, "src/app/cli.py")
+    assert [r.name for r in matched] == ["cli", "python-base"]
+
+
+def test_glob_specificity_ranks_literals_over_wildcards():
+    assert references._glob_specificity("src/**/cli.py") > references._glob_specificity(
+        "src/**/*.py"
+    )
+    assert references._glob_specificity("**/models.py") > references._glob_specificity(
+        "**/*.py"
+    )
+
+
 def test_injection_tracking_is_once_per_session(project):
     write(project, ".forge/references/django.md", DJANGO_REF)
     assert not references.was_injected(project, "sess-1", "django")

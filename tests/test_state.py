@@ -115,3 +115,30 @@ def test_override_is_one_shot_and_logged(project):
 
     overrides = state.load(project)["overrides"]
     assert overrides and overrides[-1]["gate"] == "check"
+
+
+def test_request_override_arms_sentinel_with_reason(project):
+    state.request_override(project, "audit", "shipping a docs hotfix")
+    # The sentinel exists and carries the reason for the audit trail.
+    pending = state.pending_overrides(project)
+    assert pending == {"audit": "shipping a docs hotfix"}
+    # ...and it really is the file take_override consumes.
+    taken = state.take_override(project, "audit")
+    assert taken is not None and taken["reason"] == "shipping a docs hotfix"
+    assert state.pending_overrides(project) == {}  # consumed
+
+
+def test_request_override_tolerates_empty_reason(project):
+    state.request_override(project, "check")
+    assert state.pending_overrides(project) == {"check": ""}
+
+
+def test_pending_overrides_lists_each_armed_gate(project):
+    state.request_override(project, "check", "a")
+    state.request_override(project, "uv", "b")
+    assert state.pending_overrides(project) == {"check": "a", "uv": "b"}
+
+
+def test_pending_overrides_empty_without_forge_dir(tmp_path):
+    # No .forge/ at all → nothing armed, no crash.
+    assert state.pending_overrides(str(tmp_path)) == {}

@@ -46,6 +46,14 @@ class Reference:
         rel = rel_path.replace("\\", "/").lstrip("./")
         return any(_glob_match(rel, g) for g in self.applies_to)
 
+    def match_specificity(self, rel_path: str) -> int:
+        """How specifically this reference claims `rel_path`: the score of its
+        narrowest matching glob, or -1 if it doesn't govern the file. Used to
+        order overlapping references so the most specific one wins a conflict."""
+        rel = rel_path.replace("\\", "/").lstrip("./")
+        scores = [_glob_specificity(g) for g in self.applies_to if _glob_match(rel, g)]
+        return max(scores) if scores else -1
+
 
 def refs_dir(project_dir: str) -> str:
     return os.path.join(project_dir, REFS_REL)
@@ -117,8 +125,14 @@ def installed(project_dir: str) -> list[Reference]:
 
 
 def for_file(project_dir: str, rel_path: str) -> list[Reference]:
-    """References that govern `rel_path` (relative to project root)."""
-    return [r for r in installed(project_dir) if r.governs(rel_path)]
+    """References that govern `rel_path`, most specific first.
+
+    When several references claim the same file (e.g. a broad `src/**/*.py` and a
+    narrow `src/**/cli.py`), the one with the narrowest matching glob comes first,
+    so a caller resolving a conflict can take the most specific rule. Ties break
+    by name for a deterministic order."""
+    matched = [r for r in installed(project_dir) if r.governs(rel_path)]
+    return sorted(matched, key=lambda r: (-r.match_specificity(rel_path), r.name))
 
 
 def index_block(project_dir: str) -> str:
@@ -208,3 +222,22 @@ def _glob_to_regex(pattern: str) -> str:
 
 def _glob_match(path: str, pattern: str) -> bool:
     return re.match(_glob_to_regex(pattern), path) is not None
+
+
+def _glob_specificity(pattern: str) -> int:
+    """A rough 'how narrow is this glob' score: the count of fixed (literal)
+    characters. Wildcards contribute nothing — `*`/`?` match within a segment and
+    `**` crosses segments — so `src/**/cli.py` (12 literal chars) outranks the
+    broader `src/**/*.py` (8). Used only to order overlapping references."""
+    score = 0
+    i, n = 0, len(pattern)
+    while i < n:
+        c = pattern[i]
+        if c == "*":
+            if i + 1 < n and pattern[i + 1] == "*":
+                i += 2  # `**` is the least specific wildcard
+                continue
+        elif c != "?":
+            score += 1  # a literal character
+        i += 1
+    return score

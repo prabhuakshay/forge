@@ -26,6 +26,10 @@ from typing import Any
 STATE_DIRNAME = ".forge"
 STATE_FILENAME = "state.json"
 
+# The gates that accept a one-shot override sentinel (.forge/override-<gate>).
+# Kept here so the /forge:override CLI and the status report agree on the set.
+OVERRIDE_GATES = ("check", "audit", "stop", "plan", "uv")
+
 # Directories that never contain first-party source but can hold thousands of
 # .py files. Walking them would make the fingerprint slow and, worse, unstable
 # (a dependency reinstall would invalidate every green check).
@@ -211,6 +215,45 @@ def log_override(project_dir: str, gate: str, reason: str) -> None:
         {"gate": gate, "reason": reason, "at": now_iso()}
     )
     save(project_dir, state)
+
+
+def request_override(project_dir: str, gate: str, reason: str = "") -> str:
+    """Arm a one-shot override for `gate` by writing its sentinel file.
+
+    This is the ergonomic counterpart to `take_override`: the next matching gated
+    action consumes the file and logs the bypass. Writing the reason into the file
+    means the audit trail carries *why* without a second step. Returns the path of
+    the sentinel written.
+    """
+    path = os.path.join(project_dir, STATE_DIRNAME, f"override-{gate}")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write((reason or "").strip() + "\n")
+    return path
+
+
+def pending_overrides(project_dir: str) -> dict[str, str]:
+    """Gates with an armed-but-not-yet-consumed override, mapped to their reason.
+
+    These are the sentinel files on disk (what *will* be bypassed on the next
+    gated action), as opposed to the consumed-and-logged `overrides` trail in
+    state. Used by /forge:status to surface a bypass before it silently fires."""
+    d = os.path.join(project_dir, STATE_DIRNAME)
+    out: dict[str, str] = {}
+    try:
+        names = sorted(os.listdir(d))
+    except OSError:
+        return out
+    for name in names:
+        if not name.startswith("override-"):
+            continue
+        gate = name[len("override-") :]
+        try:
+            with open(os.path.join(d, name), encoding="utf-8") as fh:
+                out[gate] = fh.read().strip()
+        except OSError:
+            out[gate] = ""
+    return out
 
 
 def take_override(project_dir: str, gate: str) -> dict[str, Any] | None:

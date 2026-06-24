@@ -31,7 +31,12 @@ _GETENV = re.compile(r"""os\.getenv\(\s*['"]([A-Z][A-Z0-9_]*)['"]""")
 _SETTINGS_CLASS = re.compile(
     r"class\s+\w+\s*\(\s*[^)]*\b(?:BaseSettings|Settings)\b[^)]*\)\s*:"
 )
-_FIELD = re.compile(r"^\s{4}([A-Za-z_][A-Za-z0-9_]*)\s*[:=]")
+# A field name at the start of a (stripped) class-body line. Indentation is not
+# baked in here: the class scanner establishes the body's own indent level (which
+# may be tabs, 2 spaces, or 4) and only matches lines at exactly that level, so a
+# differently-indented Settings class is still read and method-body locals nested
+# deeper are not mistaken for fields.
+_FIELD_NAME = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\s*[:=]")
 
 _SKIP_DIRS = {
     ".git",
@@ -50,6 +55,10 @@ _SKIP_DIRS = {
 }
 
 _COMMENT = re.compile(r"(?m)#[^\n]*")
+# Triple-quoted strings (docstrings, multi-line literals). Stripped before the
+# env-read patterns run so a doc example like `os.environ["SECRET"]` written
+# inside a docstring isn't mistaken for a real read.
+_TRIPLE = re.compile(r'(?s)""".*?"""|\'\'\'.*?\'\'\'')
 
 
 @dataclass
@@ -82,8 +91,9 @@ def scan_code(project_dir: str) -> set[str]:
                 text = fh.read()
         except OSError:
             continue
-        # Strip line comments so patterns in docstrings/comments don't fire.
-        stripped = _COMMENT.sub("", text)
+        # Strip triple-quoted strings then line comments so env-read patterns
+        # appearing in docstrings/comments don't fire as real reads.
+        stripped = _COMMENT.sub("", _TRIPLE.sub("", text))
         found.update(_OS_ENV.findall(stripped))
         found.update(_GETENV.findall(stripped))
         found.update(_settings_fields(stripped))
@@ -99,21 +109,29 @@ def _settings_fields(text: str) -> set[str]:
     """
     fields: set[str] = set()
     inside = False
+    body_indent: str | None = None
     for line in text.splitlines():
         if _SETTINGS_CLASS.search(line):
             inside = True
+            body_indent = None  # the first body line will fix the field level
             continue
-        if inside:
-            stripped = line.strip()
-            # A non-indented, non-blank line ends the class body.
-            if stripped and not line.startswith((" ", "\t")):
-                inside = False
-                continue
-            m = _FIELD.match(line)
-            if m:
-                name = m.group(1)
-                if not name.startswith("_") and name not in {"model_config", "Config"}:
-                    fields.add(name.upper())
+        if not inside:
+            continue
+        if not line.strip():
+            continue  # blank lines neither end the class nor set its indent
+        indent = line[: len(line) - len(line.lstrip())]
+        if indent == "":
+            inside = False  # a dedent back to column 0 ends the class body
+            continue
+        if body_indent is None:
+            body_indent = indent
+        if indent != body_indent:
+            continue  # deeper than the field level (method bodies etc.)
+        m = _FIELD_NAME.match(line.strip())
+        if m:
+            name = m.group(1)
+            if not name.startswith("_") and name not in {"model_config", "Config"}:
+                fields.add(name.upper())
     return fields
 
 

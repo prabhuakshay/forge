@@ -29,6 +29,13 @@ import shlex
 # Tokens that separate one command from the next within a line.
 _BOUNDARY = {"&&", "||", "|", "|&", ";", ";;", "&", "(", ")", "{", "}"}
 
+# Redirection operators as shlex emits them (punctuation runs): `>`, `>>`, `<`,
+# `<<`, and the fd-duplicating / combined forms `>&`, `<&`, `&>`, `&>>`. A bare
+# file-descriptor digit (`2` in `2> log`) lexes as its own preceding token and
+# is handled separately. We drop the operator AND its target so a redirect never
+# leaks into a command's argument list.
+_REDIR = re.compile(r"^(?:>>?|<<?|>&|<&|&>>?)$")
+
 # Programs that run another command given as their trailing arguments. We skip
 # the wrapper and any leading env assignments; we do NOT try to parse wrapper
 # options (e.g. `sudo -u user`), so such forms simply under-match — same failure
@@ -91,13 +98,25 @@ def _segments(command: str) -> list[list[str]]:
     segments: list[list[str]] = []
     current: list[str] = []
     for line in command.split("\n"):
+        skip_target = False
         for tok in _lex(line):
+            if skip_target:
+                skip_target = False
+                # The token right after a redirection operator is its target
+                # (a filename or fd), not part of the command — unless it's a
+                # boundary, which we still need to act on below.
+                if tok not in _BOUNDARY:
+                    continue
             if tok in _BOUNDARY:
                 if current:
                     segments.append(current)
                     current = []
-            elif set(tok) <= {"<", ">"}:
-                continue  # a bare redirection operator: not a command boundary
+            elif _REDIR.match(tok):
+                # Drop the leading fd digit (`2` in `2> log`) if present, the
+                # operator itself, and the redirect target that follows.
+                if current and current[-1].isdigit():
+                    current.pop()
+                skip_target = True
             else:
                 current.append(tok)
         if current:  # a newline ends the current segment
