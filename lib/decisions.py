@@ -17,8 +17,10 @@ rendering the directive block that the SessionStart hook injects.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
+import tempfile
 from dataclasses import dataclass
 
 DIRECTIVES_REL = os.path.join(".forge", "directives.md")
@@ -139,3 +141,73 @@ def render_adr(draft: AdrDraft, date: str) -> str:
 def directive_line(draft: AdrDraft) -> str:
     """The terse rule appended to directives.md, back-linked to its ADR."""
     return f"- {draft.directive} (see docs/decisions/{adr_filename(draft.number, draft.title)})"
+
+
+def _atomic_write(path: str, content: str) -> None:
+    """Write `content` to `path` via a sibling temp file + os.replace, so a reader
+    never sees a half-written ADR and a crash mid-write leaves the old file (if
+    any) intact rather than truncated."""
+    d = os.path.dirname(path) or "."
+    fd, tmp = tempfile.mkstemp(dir=d, prefix=".adr-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(content)
+        os.replace(tmp, path)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.remove(tmp)
+        raise
+
+
+def record_decision(
+    project_dir: str,
+    *,
+    title: str,
+    context: str,
+    decision: str,
+    rationale: str,
+    directive: str,
+    date: str,
+) -> tuple[int, str, str]:
+    """Allocate the next ADR number and write the ADR, its binding directive, and
+    the index entry as one serialised unit. Returns (number, adr_path, directives_path).
+
+    Number allocation and the writes run under the shared `.forge` lock
+    (`state.locked`) so two concurrent `/forge:decide` runs can't both read the
+    same highest number and each claim it — which would produce two ADRs sharing
+    `0004` and a directive whose back-reference is ambiguous, corrupting the very
+    audit trail the feature exists to protect. The ADR is the source of truth and
+    is written (atomically) first, then the directive line, then the optional
+    index; so a crash between steps can at worst orphan an ADR file — never leave a
+    directive pointing at a number that was never written.
+    """
+    # Local import: only this path needs `state`, and importing it lazily keeps
+    # the module's pure render/parse helpers free of that dependency.
+    from lib import state
+
+    with state.locked(project_dir):
+        number = next_adr_number(project_dir)
+        draft = AdrDraft(
+            number=number,
+            title=title,
+            context=context,
+            decision=decision,
+            rationale=rationale,
+            directive=directive,
+        )
+        ddir = decisions_dir(project_dir)
+        os.makedirs(ddir, exist_ok=True)
+        adr_name = adr_filename(number, title)
+        adr_path = os.path.join(ddir, adr_name)
+        _atomic_write(adr_path, render_adr(draft, date))
+
+        dpath = directives_path(project_dir)
+        os.makedirs(os.path.dirname(dpath), exist_ok=True)
+        with open(dpath, "a", encoding="utf-8") as fh:
+            fh.write(directive_line(draft) + "\n")
+
+        index = os.path.join(ddir, "README.md")
+        if os.path.exists(index):
+            with open(index, "a", encoding="utf-8") as fh:
+                fh.write(f"- [{number:04d}. {title}]({adr_name}) — Accepted\n")
+    return number, adr_path, dpath

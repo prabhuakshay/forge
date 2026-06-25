@@ -22,6 +22,10 @@ directives or a governing style reference; until then it stays out of the way.)
   `/forge:check` is green (and, where the project has binding directives or a
   governing style reference, unless `/forge:review` is green too), or push/publish
   unless `/forge:audit` is green.
+- **Config stays documented.** Every env var read in code must appear in
+  `.env.example`. `scripts/check_env_sync.py` enforces this locally at commit time
+  (and `/forge:audit` enforces it in the loop), so onboarding's "copy
+  `.env.example` and go" promise stays honest.
 
 ## Binding directives — read before changing anything
 

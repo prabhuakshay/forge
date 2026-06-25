@@ -45,10 +45,11 @@ it (draft + confirm) so it isn't lost.
 When the plan is fully checked off and `/forge:check` is green, run `/forge:docs`
 on the source root to fill any documentation gaps the new code introduced.
 
-Skip this step only when:
-- `$ARGUMENTS` contains `--no-docs`, OR
-- the change touched only tests, docs, config, or tooling (no production source
-  changed).
+Skip this step when **either** condition holds (they are independent):
+- `$ARGUMENTS` contains `--no-docs` — an explicit opt-out the user passed. Skip
+  even if production code changed; they've taken responsibility for docs.
+- the change touched only tests, docs, config, or tooling — no production source
+  changed, so there's nothing new to document. Skip automatically; no flag needed.
 
 If `/forge:docs` edits any files, re-run `/forge:check` to confirm the gate is
 still green before summarising.

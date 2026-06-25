@@ -6,6 +6,40 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-06-25
+
+### Fixed
+- **Concurrent `/forge:decide` runs can no longer collide on an ADR number.**
+  `next_adr_number` scanned `docs/decisions/` with no lock while every other
+  state mutation was serialised, so two decisions racing on a read-modify-write
+  could both claim `0004` — producing duplicate ADRs and a directive whose
+  back-reference is ambiguous, corrupting the audit trail the feature exists to
+  protect. Allocation and the ADR/directive/index writes now run together under
+  the shared `.forge` lock (`state.locked`), via a new `decisions.record_decision`.
+  The ADR is also written atomically (temp + `os.replace`) and first, so a crash
+  between steps can at worst orphan an ADR file — never leave a directive pointing
+  at a number that was never written.
+- **The coverage-floor check no longer trips on a comment.** `/forge:check`
+  decided whether a project sets its own coverage floor with a bare substring scan
+  of `pyproject.toml`, so a `--cov-fail-under` sitting in a comment (or a stray
+  `fail_under` in an unrelated table) wrongly suppressed forge's default floor.
+  Detection is now section-scoped: `fail_under` only counts inside
+  `[tool.coverage.report]`, `--cov-fail-under` only inside
+  `[tool.pytest.ini_options]`, and whole-line comments are ignored.
+- **The commit-time gate now measures coverage like the rest.** forge's own prek
+  `pytest` hook ran without `--cov`, so coverage was checked in-session and in CI
+  but not at commit — contradicting the README's "the same gate runs at commit
+  time." The hook now runs `pytest -q --cov`.
+
+### Changed
+- **Clearer command guidance.** `/forge:build` now states the two `--no-docs`
+  skip conditions as independent (explicit opt-out vs. auto-skip when no
+  production source changed); `/forge:init` lists concrete type-detection markers
+  (`manage.py`/web framework → web app, `[project.scripts]`/`__main__.py` → CLI,
+  pandas/numpy/torch → data-ML, else library) instead of "from any existing
+  files"; and the scaffolded `CLAUDE.md` now documents the `scripts/check_env_sync.py`
+  env-sync guard that was already wired into the pre-commit config.
+
 ## [0.9.0] - 2026-06-25
 
 ### Fixed
@@ -357,7 +391,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/prabhuakshay/forge/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/prabhuakshay/forge/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/prabhuakshay/forge/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/prabhuakshay/forge/compare/v0.6.0...v0.7.0

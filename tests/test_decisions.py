@@ -95,3 +95,66 @@ def test_binding_directive_count_counts_recorded_bullets(project):
 def test_has_binding_directives_false_when_absent(project):
     assert not decisions.has_binding_directives(project)
     assert decisions.binding_directive_count(project) == 0
+
+
+# --- record_decision: allocate + write as one locked, atomic unit -----------
+
+
+def test_record_decision_writes_adr_directive_and_returns_paths(project):
+    number, adr_path, dpath = decisions.record_decision(
+        project,
+        title="Adopt uv",
+        context="pip is slow.",
+        decision="Use uv.",
+        rationale="Faster.",
+        directive="Dependencies MUST be managed with uv.",
+        date="2026-06-25",
+    )
+    assert number == 1
+    assert adr_path.endswith("docs/decisions/0001-adopt-uv.md")
+    with open(adr_path, encoding="utf-8") as fh:
+        body = fh.read()
+    assert "# 0001. Adopt uv" in body and "Date: 2026-06-25" in body
+    with open(dpath, encoding="utf-8") as fh:
+        assert "Dependencies MUST be managed with uv." in fh.read()
+
+
+def test_record_decision_allocates_sequential_numbers(project):
+    """Each call claims the next free number — the lock makes this hold even when
+    callers race; sequential calls are the observable contract."""
+    n1, _, _ = decisions.record_decision(
+        project,
+        title="One",
+        context="c",
+        decision="d",
+        rationale="r",
+        directive="First.",
+        date="2026-06-25",
+    )
+    n2, _, _ = decisions.record_decision(
+        project,
+        title="Two",
+        context="c",
+        decision="d",
+        rationale="r",
+        directive="Second.",
+        date="2026-06-25",
+    )
+    assert (n1, n2) == (1, 2)
+    body = decisions.read_directives(project)
+    assert "First." in body and "Second." in body
+
+
+def test_record_decision_appends_to_index_when_present(project):
+    write(project, "docs/decisions/README.md", "# Decisions\n")
+    number, _, _ = decisions.record_decision(
+        project,
+        title="Indexed",
+        context="c",
+        decision="d",
+        rationale="r",
+        directive="Rule.",
+        date="2026-06-25",
+    )
+    with open(f"{project}/docs/decisions/README.md", encoding="utf-8") as fh:
+        assert f"[{number:04d}. Indexed]" in fh.read()

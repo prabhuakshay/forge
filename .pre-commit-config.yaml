@@ -37,7 +37,9 @@ repos:
 
       - id: pytest
         name: pytest
-        entry: uv run --group dev pytest -q
+        # --cov so the commit-time gate measures coverage exactly like the dev
+        # command (README) and the in-session forge gate — no drift in flags.
+        entry: uv run --group dev pytest -q --cov
         language: system
         always_run: true
         pass_filenames: false

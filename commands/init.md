@@ -22,9 +22,12 @@ placeholders (`{{PROJECT_NAME}}`, `{{PACKAGE}}`, `{{DESCRIPTION}}`, `{{AUTHOR}}`
    (hyphens → underscores). If anything is ambiguous, ask with AskUserQuestion —
    don't guess the project's identity.
 
-2. **Detect type** (library / web app / CLI / data-ML) from any existing files,
-   or ask. This only tweaks dependencies and the architecture doc; the workflow
-   is identical for all.
+2. **Detect type** (library / web app / CLI / data-ML) from existing signals:
+   `manage.py` or a Django/Flask/FastAPI dependency → web app; a
+   `[project.scripts]` entry point or a `__main__.py` → CLI; notebooks or
+   pandas/numpy/torch dependencies → data-ML; none of the above → library. If the
+   signals are absent or conflict, ask rather than guess. Type only tweaks
+   dependencies and the architecture doc; the workflow is identical for all.
 
 3. **Lay down the structure:**
    - `src/{{PACKAGE}}/__init__.py` (with a module docstring and `__version__`)

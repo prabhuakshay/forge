@@ -42,17 +42,31 @@ def _project_sets_cov_floor(project_dir: str) -> bool:
     mature one may raise it. In that case forge must NOT pass its own
     `--cov-fail-under`, because the CLI flag overrides the config file and would
     silently replace the project's floor with our default. Detected by reading
-    pyproject.toml as text — tomllib is 3.11+, and forge targets 3.10 — looking
-    for a `fail_under =` line or a `--cov-fail-under` already wired into addopts.
+    pyproject.toml as text — tomllib is 3.11+, and forge targets 3.10 — but
+    *section-scoped*: a `fail_under =` key only counts inside
+    `[tool.coverage.report]`, and a `--cov-fail-under` only inside
+    `[tool.pytest.ini_options]` (addopts). A bare substring scan would also fire
+    on the token sitting in a comment or an unrelated section, wrongly suppressing
+    our floor.
     """
     try:
         with open(os.path.join(project_dir, "pyproject.toml"), encoding="utf-8") as fh:
             text = fh.read()
     except OSError:
         return False
-    return (
-        bool(re.search(r"(?m)^\s*fail_under\s*=", text)) or "--cov-fail-under" in text
-    )
+    section = ""
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith("#"):
+            continue  # whole-line comment — never a real setting
+        if line.startswith("[") and line.endswith("]"):
+            section = line[1:-1].strip()
+            continue
+        if section == "tool.coverage.report" and re.match(r"fail_under\s*=", line):
+            return True
+        if section == "tool.pytest.ini_options" and "--cov-fail-under" in line:
+            return True
+    return False
 
 
 def _uses_mypy(project_dir: str) -> bool:

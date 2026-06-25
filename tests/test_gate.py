@@ -186,6 +186,21 @@ def test_run_tests_omits_floor_when_addopts_sets_it(monkeypatch, tmp_path):
     assert not any(a.startswith("--cov-fail-under") for a in seen[0])
 
 
+def test_run_tests_ignores_commented_or_misplaced_floor(monkeypatch, tmp_path):
+    """A `--cov-fail-under` in a comment, or a `fail_under` outside
+    `[tool.coverage.report]`, must NOT read as the project setting its own floor —
+    otherwise forge would silently drop its default on a project that never set one."""
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.pytest.ini_options]\n"
+        "# addopts = '--cov-fail-under=90'  # disabled, just a note\n"
+        "[tool.ruff]\n"
+        'fail_under = "not a coverage setting"\n'
+    )
+    seen = _capture_cmd(monkeypatch)
+    gate.run_tests(str(tmp_path))
+    assert f"--cov-fail-under={gate.COVERAGE_FAIL_UNDER}" in seen[0]
+
+
 # --- configurable subprocess timeout --------------------------------------
 
 

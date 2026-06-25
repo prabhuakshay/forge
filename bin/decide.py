@@ -34,35 +34,17 @@ def main() -> int:
         return 1
 
     project = os.getcwd()
-    number = decisions.next_adr_number(project)
-    draft = decisions.AdrDraft(
-        number=number,
+    # Allocation + the three writes happen together under the .forge lock, so
+    # concurrent /forge:decide runs can't collide on a number (see record_decision).
+    number, adr_path, dpath = decisions.record_decision(
+        project,
         title=data["title"],
         context=data["context"],
         decision=data["decision"],
         rationale=data["rationale"],
         directive=data["directive"],
+        date=data["date"],
     )
-
-    # 1) Write the ADR.
-    ddir = decisions.decisions_dir(project)
-    os.makedirs(ddir, exist_ok=True)
-    adr_name = decisions.adr_filename(number, draft.title)
-    adr_path = os.path.join(ddir, adr_name)
-    with open(adr_path, "w", encoding="utf-8") as fh:
-        fh.write(decisions.render_adr(draft, data["date"]))
-
-    # 2) Append the binding directive (creating the file if needed).
-    dpath = decisions.directives_path(project)
-    os.makedirs(os.path.dirname(dpath), exist_ok=True)
-    with open(dpath, "a", encoding="utf-8") as fh:
-        fh.write(decisions.directive_line(draft) + "\n")
-
-    # 3) Append to the decision index if present.
-    index = os.path.join(ddir, "README.md")
-    if os.path.exists(index):
-        with open(index, "a", encoding="utf-8") as fh:
-            fh.write(f"- [{number:04d}. {draft.title}]({adr_name}) — Accepted\n")
 
     print(f"Recorded decision {number:04d}.")
     print(f"  ADR:       {os.path.relpath(adr_path, project)}")
