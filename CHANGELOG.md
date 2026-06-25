@@ -6,6 +6,14 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-06-25
+
+### Added
+- **Dual Docker setup for all projects:** `Dockerfile` (production, multi-stage optimized) and `Dockerfile.dev` (development with watchfiles hot reload). Includes `.dockerignore` for efficient builds.
+- **Docker Compose files:** `docker-compose.yml` (production with health checks and restart policy) and `docker-compose.dev.yml` (development with volume mounts for live code changes).
+- **Django-specific Docker:** `Dockerfile.django` and `Dockerfile.django.dev` with proper Django setup (gunicorn, migrations, collectstatic). Includes `docker-compose.django.yml` and `docker-compose.django.dev.yml`.
+- **Django health check integration:** Management command template (`healthcheck.py`) automatically created for Django projects. Docker health checks integrated by default via `python manage.py healthcheck` (checks database connectivity).
+
 ## [0.9.1] - 2026-06-25
 
 ### Fixed
