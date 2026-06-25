@@ -35,7 +35,7 @@ special-case "no state yet".
 | `overrides` | object[] | Append-only audit trail of deliberate gate bypasses (see *Overrides* below). |
 | `ref_injection` | object | Per-session bookkeeping for style-reference injection (see *Reference injection* below). Written by `lib/references.py`. |
 
-### Gate records (`last_check`, `last_audit`)
+### Gate records (`last_check`, `last_audit`, `last_review`)
 
 Each is an object recorded by `state.record_pass` when a gate passes:
 

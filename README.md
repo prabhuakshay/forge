@@ -23,13 +23,13 @@ come out consistent, stable, well-documented, and honest about their own state.
 | `/forge:build` | Implement a plan item-by-item, tests from the spec | — |
 | `/forge:check` | Code gate: ruff + mypy + pytest/coverage | **unblocks commit** |
 | `/forge:audit` | Non-code sync: docs↔code, `.env`, lockfile, deps, metadata | **unblocks push/publish** |
-| `/forge:review` | Quality + correctness + directive/reference compliance | — |
+| `/forge:review` | Quality + correctness + directive/reference compliance | **unblocks commit** (projects with directives or governing references) |
 | `/forge:release` | Version bump, changelog, build, publish | — |
 | `/forge:decide` | Record a durable directive + ADR | binds all future work |
 | `/forge:reference` | Install/author scoped style references (django, cli, …) | catches style drift |
 | `/forge:docs` | Crawl codebase, find undocumented features, write/expand markdown in docs/ | — |
 | `/forge:status` | Snapshot of where the project stands: gates, dirty set, references, overrides | — |
-| `/forge:override` | Arm a one-shot, logged bypass of a gate (check, audit, stop, plan, uv) | the audited escape hatch |
+| `/forge:override` | Arm a one-shot, logged bypass of a gate (check, audit, review, stop, plan, uv) | the audited escape hatch |
 
 ## What makes it stick
 
@@ -38,9 +38,11 @@ come out consistent, stable, well-documented, and honest about their own state.
 - **PostToolUse** auto-formats every `.py` you touch (`ruff format` + safe fixes)
   and invalidates any stale "green" result.
 - **PreToolUse** blocks `git commit` unless `/forge:check` is green for the current
-  tree, blocks `git push`/publish unless `/forge:audit` is green, blocks source
-  edits with no active plan, and blocks non-uv dependency commands (pip,
-  `uv pip install`, requirements files) — deps go through `uv add`/`uv remove`.
+  tree, blocks `git push`/publish unless `/forge:audit` is green, blocks `git
+  commit` unless `/forge:review` is green for projects that have binding directives
+  or a governing style reference, blocks source edits with no active plan, and
+  blocks non-uv dependency commands (pip, `uv pip install`, requirements files) —
+  deps go through `uv add`/`uv remove`.
 - **Stop** won't let the agent end a turn on a broken tree (lint/types red, or env
   vars read in code but undocumented in `.env.example`). If a broken state is a
   *deliberate* stopping point, `/forge:override stop "<why>"` releases it (logged).

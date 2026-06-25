@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-25
+
 ### Added
 - **Review gate (`require_review`)** — `git commit` is now blocked until
   `/forge:review` is green for the current tree, closing the gap where binding
@@ -233,7 +235,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/prabhuakshay/forge/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/prabhuakshay/forge/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/prabhuakshay/forge/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/prabhuakshay/forge/compare/v0.2.1...v0.3.0
