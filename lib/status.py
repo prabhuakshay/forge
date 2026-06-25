@@ -46,6 +46,12 @@ def report(project_dir: str) -> str:
 
     out.append("gates")
     out.append(_gate_line(project_dir, "check", "check  (commit gate)"))
+    # The review gate only binds when there's something to enforce (directives or
+    # a governing reference), so only surface it then — otherwise it's noise.
+    if decisions.has_binding_directives(project_dir) or references.installed(
+        project_dir
+    ):
+        out.append(_gate_line(project_dir, "review", "review (commit gate)"))
     out.append(_gate_line(project_dir, "audit", "audit  (push/publish gate)"))
     out.append("")
 
@@ -63,9 +69,8 @@ def report(project_dir: str) -> str:
             out.append(f"  • {ref.name} [{ref.enforcement}] — {scope}")
         out.append("")
 
-    body = decisions.read_directives(project_dir)
-    if body:
-        binding = sum(1 for line in body.splitlines() if line.strip().startswith("-"))
+    binding = decisions.binding_directive_count(project_dir)
+    if binding:
         out.append(f"directives   {binding} binding (.forge/directives.md)")
         out.append("")
 

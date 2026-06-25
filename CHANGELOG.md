@@ -6,6 +6,30 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Review gate (`require_review`)** — `git commit` is now blocked until
+  `/forge:review` is green for the current tree, closing the gap where binding
+  directives and blocking style references were enforced only by an optional
+  command. It binds **only** where there's something to enforce (option B): a
+  recorded directive, or an installed reference governing a file in the change
+  set — projects with neither are unaffected. Like the other gates it works on a
+  fingerprinted pass (`last_review`, recorded by `/forge:review` via
+  `bin/mark.py review`), is invalidated by any `.py` edit, and honours a one-shot
+  logged override (`/forge:override review "<why>"`). `/forge:status` surfaces the
+  review gate when it applies.
+- `lib/decisions.binding_directive_count` / `has_binding_directives` — distinguish
+  a project that has actually recorded a directive from one that only carries the
+  scaffolded template prose (the signal the review gate keys on). `/forge:status`
+  now uses this for its directive count.
+
+### Changed
+- `references.for_file` breaks an equal-specificity tie deterministically:
+  `blocking` references outrank `advisory` ones (then name), and the
+  `reference-auditor` documents the rule.
+- `/forge:init` pins the default Python version (3.13) instead of "a current
+  stable, e.g. 3.12"; `/forge:build` documents that it is resumable (works only
+  unchecked items).
+
 ## [0.5.0] - 2026-06-24
 
 ### Added

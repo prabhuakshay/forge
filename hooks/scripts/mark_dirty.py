@@ -5,8 +5,9 @@ was measured on. The moment a relevant file changes, that pass is stale and must
 not wave a commit/release through. We drop the relevant record here so the
 PreToolUse gates re-demand a fresh run.
 
-  * any .py change      → invalidates `check` (and `audit`, which reads code too)
-                          and joins the dirty set the Stop gate scopes mypy to
+  * any .py change      → invalidates `check`, `audit`, and `review` (all of which
+                          read code), and joins the dirty set the Stop gate scopes
+                          mypy to
   * docs/.env/pyproject → invalidates `audit`
 """
 
@@ -48,6 +49,7 @@ def main() -> None:
     if path.endswith(".py"):
         state.invalidate(project, "check")
         state.invalidate(project, "audit")
+        state.invalidate(project, "review")
         rel = _rel_in_project(project, path)
         if rel:
             state.add_dirty(project, rel)

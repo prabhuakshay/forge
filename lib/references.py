@@ -124,15 +124,32 @@ def installed(project_dir: str) -> list[Reference]:
     return out
 
 
+def _enforcement_rank(enforcement: str) -> int:
+    """Tie-break weight for two equally-specific references: `blocking` (0) sorts
+    ahead of everything else (1). `enforcement` is free text on disk, so anything
+    that isn't exactly "blocking" is treated as the weaker, advisory side rather
+    than silently winning the tie."""
+    return 0 if enforcement == "blocking" else 1
+
+
 def for_file(project_dir: str, rel_path: str) -> list[Reference]:
-    """References that govern `rel_path`, most specific first.
+    """References that govern `rel_path`, in conflict-resolution order.
 
     When several references claim the same file (e.g. a broad `src/**/*.py` and a
     narrow `src/**/cli.py`), the one with the narrowest matching glob comes first,
-    so a caller resolving a conflict can take the most specific rule. Ties break
-    by name for a deterministic order."""
+    so a caller resolving a conflict can take the most specific rule. At *equal*
+    specificity the order is still deterministic: a `blocking` reference outranks
+    an `advisory` one (the stricter contract wins the tie), and references tied on
+    both fall back to name order."""
     matched = [r for r in installed(project_dir) if r.governs(rel_path)]
-    return sorted(matched, key=lambda r: (-r.match_specificity(rel_path), r.name))
+    return sorted(
+        matched,
+        key=lambda r: (
+            -r.match_specificity(rel_path),
+            _enforcement_rank(r.enforcement),
+            r.name,
+        ),
+    )
 
 
 def index_block(project_dir: str) -> str:

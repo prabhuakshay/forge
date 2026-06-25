@@ -53,6 +53,17 @@ next matching gated action is allowed exactly once and the skip is appended to t
 override trail in `.forge/state.json`. `/forge:status` shows what's armed before it
 fires and the full history after.
 
+**The gates are a workflow guardrail, not a security sandbox.** Two deliberate
+properties follow from that. First, the hooks *fail open*: a hook that hits
+malformed input or an unexpected error gets out of the way rather than wedging your
+tool call. Second, the command parser that recognises `git commit` / `git push` /
+non-uv dependency commands is built to see through ordinary command shapes (paths,
+env prefixes, wrappers, `sh -c '…'`), not determined obfuscation — exotic quoting or
+an `eval` can still slip past it. This is by design: forge keeps an honest workflow
+honest and makes the quality bar the path of least resistance; it is not an
+adversarial boundary. What it *does* guarantee is that every bypass that happens
+through the front door is logged, never silent.
+
 The type check (mypy) only runs when the project actually configures it — a
 `[tool.mypy]` table, a `mypy.ini`/`.mypy.ini`, or a `[mypy]` section in
 `setup.cfg`. A project

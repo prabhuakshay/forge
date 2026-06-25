@@ -10,13 +10,14 @@ exists from day one.
 
 Templates live in `$CLAUDE_PLUGIN_ROOT/templates/`. Copy them in, substituting the
 placeholders (`{{PROJECT_NAME}}`, `{{PACKAGE}}`, `{{DESCRIPTION}}`, `{{AUTHOR}}`,
-`{{LICENSE}}`, `{{PYTHON_VERSION}}` like `3.12`, `{{PYTHON_VERSION_NODOT}}` like
-`312`). Project name from `$ARGUMENTS` if given.
+`{{LICENSE}}`, `{{PYTHON_VERSION}}` like `3.13`, `{{PYTHON_VERSION_NODOT}}` like
+`313`). Project name from `$ARGUMENTS` if given.
 
 ## Steps
 
 1. **Gather facts.** Determine project name, a one-line description, the Python
-   version (default to a current stable, e.g. 3.12), and license (default MIT).
+   version (**default 3.13** — this is a fixed default, bumped once per Python
+   release cycle, not re-guessed per run), and license (default MIT).
    The package name is the project name normalised to a valid identifier
    (hyphens → underscores). If anything is ambiguous, ask with AskUserQuestion —
    don't guess the project's identity.

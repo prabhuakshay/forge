@@ -16,6 +16,10 @@ the user to run `/forge:plan` (the require_plan hook will block source edits any
 
 ## Work the checklist
 
+This command is **resumable**: it only ever works *unchecked* items, so re-running
+it after an interruption (or a failed gate) picks up at the first incomplete item
+and never re-implements one already ticked off.
+
 For each unchecked item, in order:
 
 1. **Tests first, from the spec.** Write tests against what the plan says the

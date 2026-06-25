@@ -22,9 +22,11 @@ python3 "$CLAUDE_PLUGIN_ROOT/bin/refs.py" applicable <path>
 `refs.py applicable` lists governing references **most specific first** (narrowest
 matching glob first). When two references give conflicting rules for the same file,
 the more specific one wins — e.g. a `src/**/cli.py` reference overrides a broad
-`src/**/*.py` one. If their enforcement levels differ on the same point, `blocking`
-takes precedence over `advisory`. Report the violation against the rule that wins;
-don't flag the file twice for the same conflict.
+`src/**/*.py` one. When two references match the file **equally** specifically, the
+`blocking` one wins the tie and is listed first; report the violation against it.
+If they are tied on specificity *and* enforcement, they are genuine peer rules —
+honour both and report a violation of either. Either way, don't flag the file twice
+for the same conflict.
 
 ## Method
 

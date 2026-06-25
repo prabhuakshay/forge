@@ -61,3 +61,37 @@ def test_directives_roundtrip_and_injection(project):
     block = decisions.injection_block(project)
     assert "Binding project directives" in block
     assert "CLI MUST use subcommands." in block
+
+
+# The scaffolded template is prose only (no bullets), so "the file exists" must
+# NOT read as "a directive was recorded" — that distinction is what keeps the
+# review gate off projects that haven't actually decided anything.
+_TEMPLATE_ONLY = (
+    "# Binding directives — demo\n\n"
+    "Durable, agreed constraints for this project.\n\n"
+    "<!-- directives are appended below this line -->\n"
+)
+
+
+def test_binding_directive_count_ignores_template_prose(project):
+    write(project, ".forge/directives.md", _TEMPLATE_ONLY)
+    assert decisions.has_directives(project)  # file is non-empty
+    assert decisions.binding_directive_count(project) == 0
+    assert not decisions.has_binding_directives(project)
+
+
+def test_binding_directive_count_counts_recorded_bullets(project):
+    write(
+        project,
+        ".forge/directives.md",
+        _TEMPLATE_ONLY
+        + "- CLI MUST use subcommands. (see docs/decisions/0001-cli.md)\n"
+        + "- Config MUST go through pydantic-settings. (see docs/decisions/0002-cfg.md)\n",
+    )
+    assert decisions.binding_directive_count(project) == 2
+    assert decisions.has_binding_directives(project)
+
+
+def test_has_binding_directives_false_when_absent(project):
+    assert not decisions.has_binding_directives(project)
+    assert decisions.binding_directive_count(project) == 0

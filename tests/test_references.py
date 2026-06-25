@@ -86,6 +86,25 @@ def test_for_file_orders_most_specific_first(project):
     assert [r.name for r in matched] == ["cli", "python-base"]
 
 
+def test_for_file_breaks_specificity_ties_blocking_first(project):
+    # Two references match src/app/models.py at the *same* specificity. The
+    # blocking one must come first so an equal-specificity conflict resolves to
+    # the stricter rule. Names are chosen so plain alphabetical order would put
+    # the advisory one first — proving the enforcement tie-break overrides it.
+    write(
+        project,
+        ".forge/references/a-advisory.md",
+        '---\nname: a-advisory\napplies_to: ["src/**/models.py"]\nenforcement: advisory\n---\na\n',
+    )
+    write(
+        project,
+        ".forge/references/z-blocking.md",
+        '---\nname: z-blocking\napplies_to: ["src/**/models.py"]\nenforcement: blocking\n---\nz\n',
+    )
+    matched = references.for_file(project, "src/app/models.py")
+    assert [r.name for r in matched] == ["z-blocking", "a-advisory"]
+
+
 def test_glob_specificity_ranks_literals_over_wildcards():
     assert references._glob_specificity("src/**/cli.py") > references._glob_specificity(
         "src/**/*.py"

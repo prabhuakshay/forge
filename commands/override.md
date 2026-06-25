@@ -1,6 +1,6 @@
 ---
-description: Arm a one-shot, logged bypass of a forge gate (check, audit, stop, plan, uv)
-argument-hint: "<check|audit|stop|plan|uv> <reason>"
+description: Arm a one-shot, logged bypass of a forge gate (check, audit, review, stop, plan, uv)
+argument-hint: "<check|audit|review|stop|plan|uv> <reason>"
 allowed-tools: Bash
 ---
 
@@ -14,6 +14,7 @@ The gates:
 | Gate | What it blocks | Bypass when… |
 |---|---|---|
 | `check` | `git commit` on a non-green tree | committing a hotfix you'll fix forward |
+| `review` | `git commit` when binding directives/references aren't reviewed green | shipping a change whose review you'll do forward |
 | `audit` | `git push` / publish with doc/config drift | shipping urgently, drift tracked separately |
 | `stop` | ending the turn on a broken tree | the broken state is a deliberate stopping point |
 | `plan` | editing `src/**.py` with no active plan | a genuinely trivial one-off edit |

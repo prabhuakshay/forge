@@ -28,7 +28,7 @@ STATE_FILENAME = "state.json"
 
 # The gates that accept a one-shot override sentinel (.forge/override-<gate>).
 # Kept here so the /forge:override CLI and the status report agree on the set.
-OVERRIDE_GATES = ("check", "audit", "stop", "plan", "uv")
+OVERRIDE_GATES = ("check", "audit", "review", "stop", "plan", "uv")
 
 # Directories that never contain first-party source but can hold thousands of
 # .py files. Walking them would make the fingerprint slow and, worse, unstable

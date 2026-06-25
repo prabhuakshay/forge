@@ -30,6 +30,7 @@ special-case "no state yet".
 | `active_plan` | string \| null | Path to the plan `/forge:build` is currently working, relative to the project root. |
 | `last_check` | object \| null | The last green **code gate** result (see *Gate records* below), or null if none/stale. |
 | `last_audit` | object \| null | The last green **audit** result, same shape as `last_check`. |
+| `last_review` | object \| null | The last green **review** result, same shape as `last_check`. Recorded by `/forge:review` when it comes back clean; gates `git commit` only for projects with binding directives or a governing reference. |
 | `dirty_py` | string[] | Source files edited since the last green check — the Stop gate type-checks only these. Cleared when a full check passes. |
 | `overrides` | object[] | Append-only audit trail of deliberate gate bypasses (see *Overrides* below). |
 | `ref_injection` | object | Per-session bookkeeping for style-reference injection (see *Reference injection* below). Written by `lib/references.py`. |
@@ -71,7 +72,8 @@ writes the sentinel file `<project>/.forge/override-<gate>` (its contents become
 the `reason`); writing that file by hand does the same thing.
 `state.take_override` reads and **deletes** the sentinel on use, then appends an
 entry here — so a bypass applies to exactly one gated action and is always
-logged. Gates: `check`, `audit`, `stop`, `plan`, `uv` (`state.OVERRIDE_GATES`).
+logged. Gates: `check`, `audit`, `review`, `stop`, `plan`, `uv`
+(`state.OVERRIDE_GATES`).
 
 The sentinel files are the *armed* overrides — what `state.pending_overrides`
 returns and `/forge:status` surfaces *before* they fire — as distinct from this

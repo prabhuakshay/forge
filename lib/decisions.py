@@ -48,6 +48,26 @@ def has_directives(project_dir: str) -> bool:
     return bool(read_directives(project_dir))
 
 
+def binding_directive_count(project_dir: str) -> int:
+    """How many directives have actually been recorded — the `- …` bullet lines
+    `/forge:decide` appends, not whether the file merely exists.
+
+    The scaffolded `directives.md` ships prose (a header and usage note) but no
+    bullets, so `has_directives` (non-empty) is True from day one. This counts the
+    real, binding decisions, which is the signal callers want when asking 'does
+    this project have anything for review to enforce?'."""
+    return sum(
+        1
+        for line in read_directives(project_dir).splitlines()
+        if line.strip().startswith("-")
+    )
+
+
+def has_binding_directives(project_dir: str) -> bool:
+    """True once at least one real directive (not just the template) is recorded."""
+    return binding_directive_count(project_dir) > 0
+
+
 def injection_block(project_dir: str) -> str:
     """Render directives for SessionStart injection, or '' to inject nothing.
 

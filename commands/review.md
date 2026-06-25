@@ -32,5 +32,20 @@ vs **Suggested** (quality, simplification). For blocking items, fix them or, wit
 the user's agreement, record an explicit override. Don't mark the review done
 while a blocking finding stands unaddressed.
 
+## Record the pass
+
+Once **zero blocking findings remain** for the current tree, record the review so
+the commit gate recognises it:
+
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/bin/mark.py" review
+```
+
+This matters for projects with binding directives or governing references: the
+`require_review` hook blocks `git commit` until review is green for the current
+tree (any later `.py` edit re-arms it). Record the pass **only** when the review
+genuinely came back clean — never to quiet the gate. If a blocking finding is being
+deliberately shipped, use `/forge:override review "<why>"` (logged) instead.
+
 End by reminding the user to `/forge:check` and `/forge:audit` if not already
 green.
