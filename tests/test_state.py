@@ -103,6 +103,55 @@ def test_record_audit_pass_keeps_dirty(project):
     assert state.dirty_files(project) == ["src/a.py"]
 
 
+def test_set_active_plan_records_path(project):
+    state.set_active_plan(project, "docs/plans/0003-thing.md")
+    assert state.load(project)["active_plan"] == "docs/plans/0003-thing.md"
+
+
+def test_set_active_plan_preserves_other_fields(project):
+    """The dedicated writer must not clobber unrelated state (e.g. a green check)."""
+    write(project, "src/app.py", "x = 1\n")
+    state.record_pass(project, "check")
+    state.set_active_plan(project, "docs/plans/0001-a.md")
+    st = state.load(project)
+    assert st["active_plan"] == "docs/plans/0001-a.md"
+    assert st["last_check"] and st["last_check"]["passed"]  # still green
+
+
+def test_save_is_atomic_no_temp_left_behind(project):
+    """save() writes via a temp file + os.replace; on success no stray temp file
+    is left in .forge/ and the state reads back intact."""
+    state.set_active_plan(project, "docs/plans/0001-a.md")
+    leftovers = [
+        n
+        for n in os.listdir(os.path.join(project, ".forge"))
+        if n.startswith(".state-")
+    ]
+    assert leftovers == []
+    assert state.load(project)["active_plan"] == "docs/plans/0001-a.md"
+
+
+def test_save_cleans_up_temp_on_replace_failure(project, monkeypatch):
+    """If the final os.replace fails, save() must not leave its temp file behind
+    (and must propagate the error rather than swallow it)."""
+    import lib.state as state_mod
+
+    def boom(src, dst):
+        raise OSError("replace failed")
+
+    monkeypatch.setattr(state_mod.os, "replace", boom)
+    try:
+        state.set_active_plan(project, "docs/plans/0001-a.md")
+    except OSError:
+        pass
+    leftovers = [
+        n
+        for n in os.listdir(os.path.join(project, ".forge"))
+        if n.startswith(".state-")
+    ]
+    assert leftovers == []
+
+
 def test_override_is_one_shot_and_logged(project):
     flag = os.path.join(project, ".forge", "override-check")
     with open(flag, "w", encoding="utf-8") as fh:

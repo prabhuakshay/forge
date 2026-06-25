@@ -31,10 +31,12 @@ def main() -> None:
     ):
         hookio.allow()
 
-    if state.take_override(project, "audit"):
+    # Freshness before override: a green tree has nothing to bypass, so don't
+    # consume (and log) a one-shot override that wasn't needed. See require_check.
+    if state.is_current(project, "audit"):
         hookio.allow()
 
-    if state.is_current(project, "audit"):
+    if state.take_override(project, "audit"):
         hookio.allow()
 
     hookio.deny(

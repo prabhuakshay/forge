@@ -117,6 +117,21 @@ def test_auto_format_ignores_non_python(project, faketools):
     assert not faketools.invoked("ruff")
 
 
+def test_auto_format_ignores_non_forge_project(tmp_path, faketools):
+    """Scoped to forge projects like every other hook: a .py edit in a repo with
+    no .forge/ must not trigger ruff (no silent formatting outside the workflow)."""
+    proj = tmp_path / "plain"
+    proj.mkdir()
+    path = write(str(proj), "app.py", "x=1\n")
+    run = run_hook(
+        "auto_format",
+        {"cwd": str(proj), "tool_input": {"file_path": path}},
+        env=faketools.env(),
+    )
+    assert run.code == 0
+    assert not faketools.invoked("ruff")
+
+
 # --- stop_gate (Stop) ----------------------------------------------------
 
 

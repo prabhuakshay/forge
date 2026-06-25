@@ -10,9 +10,13 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 
-from conftest import run_hook, write
+from conftest import SCRIPTS_DIR, run_hook, write
 from lib import state
+
+sys.path.insert(0, SCRIPTS_DIR)
+import require_review  # noqa: E402  (hook script imported for its pure helpers)
 
 _DIRECTIVE = "- CLI MUST use subcommands. (see docs/decisions/0001-cli.md)\n"
 
@@ -80,6 +84,18 @@ def test_non_commit_command_is_ignored(project):
     assert run.decision is None
 
 
+def test_green_review_does_not_consume_a_pending_override(project):
+    """Freshness before override: a tree that already passed review must not burn
+    a one-shot override armed against it."""
+    write(project, ".forge/directives.md", _DIRECTIVE)
+    state.record_pass(project, "review")
+    write(project, ".forge/override-review", "armed but unneeded")
+    run = run_hook("require_review", _commit(project))
+    assert run.decision is None
+    assert os.path.exists(os.path.join(project, ".forge/override-review"))
+    assert state.load(project)["overrides"] == []
+
+
 def test_review_override_consumed_and_logged(project):
     write(project, ".forge/directives.md", _DIRECTIVE)
     write(project, ".forge/override-review", "ship now, review forward")
@@ -101,6 +117,34 @@ def test_ignores_non_forge_project(tmp_path):
 
 
 # --- the reference half of option B (needs a real repo for `git status`) -
+
+
+def test_unquote_passes_plain_paths_through():
+    assert require_review._unquote_git_path("src/app.py") == "src/app.py"
+
+
+def test_unquote_decodes_octal_utf8():
+    # git renders a non-ASCII path quoted with octal byte escapes; "café.py" has
+    # 'é' as the two UTF-8 bytes \303\251.
+    assert require_review._unquote_git_path('"caf\\303\\251.py"') == "café.py"
+
+
+def test_unquote_decodes_simple_escapes():
+    assert require_review._unquote_git_path('"a\\tb\\"c\\\\d.py"') == 'a\tb"c\\d.py'
+
+
+def test_unquoted_octal_path_matches_reference(project):
+    """End to end: a governed source file with a non-ASCII name in the change set
+    is decoded so the reference glob matches and the gate fires."""
+    _git_init(project)
+    write(
+        project,
+        ".forge/references/python-base.md",
+        '---\nname: python-base\napplies_to: ["src/**/*.py"]\nenforcement: blocking\n---\nrules\n',
+    )
+    write(project, "src/café.py", "x = 1\n")  # untracked, non-ASCII, governed
+    run = run_hook("require_review", _commit(project))
+    assert _denied(run)
 
 
 def test_commit_blocked_when_reference_governs_changed_file(project):

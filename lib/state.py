@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 from datetime import datetime, timezone
 from typing import Any
 
@@ -80,11 +81,29 @@ def load(project_dir: str) -> dict[str, Any]:
 
 
 def save(project_dir: str, state: dict[str, Any]) -> None:
+    """Persist state atomically: write a sibling temp file, then os.replace it
+    over the target. A torn write would otherwise be read back as corrupt JSON
+    and silently reset to the empty skeleton (load()), dropping recorded passes
+    AND the overrides audit trail — and two tool calls writing at once could lose
+    one's update. os.replace is atomic on the same filesystem, so a reader sees
+    either the old file or the fully-written new one, never a half-written one."""
     path = _state_path(project_dir)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as fh:
-        json.dump(state, fh, indent=2, sort_keys=True)
-        fh.write("\n")
+    fd, tmp = tempfile.mkstemp(
+        dir=os.path.dirname(path), prefix=".state-", suffix=".tmp"
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(state, fh, indent=2, sort_keys=True)
+            fh.write("\n")
+        os.replace(tmp, path)
+    except BaseException:
+        # Don't leave the temp file behind if the write/replace failed.
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def _iter_source_files(project_dir: str):
@@ -151,6 +170,18 @@ def record_pass(project_dir: str, gate: str) -> None:
     if gate == "check":
         state["dirty_py"] = []
     save(project_dir, state)
+
+
+def set_active_plan(project_dir: str, plan_path: str) -> None:
+    """Record `plan_path` as the project's active plan.
+
+    The single writer of the `active_plan` field, so /forge:plan never has to
+    hand-edit state.json (a malformed write there would corrupt workflow state).
+    Stored verbatim — callers pass a repo-relative path like
+    `docs/plans/0003-thing.md`."""
+    st = load(project_dir)
+    st["active_plan"] = plan_path
+    save(project_dir, st)
 
 
 def add_dirty(project_dir: str, rel_path: str) -> None:

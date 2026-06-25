@@ -6,6 +6,41 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-06-25
+
+### Added
+- `bin/plan.py active <path>` — records the active plan via a helper so
+  `/forge:plan` no longer hand-edits `state.json` (a malformed write there
+  corrupted workflow state); backed by `lib/state.set_active_plan`.
+
+### Changed
+- **State is now persisted atomically** (`lib/state.save` writes a temp file then
+  `os.replace`s it). A torn write was previously read back as corrupt JSON and
+  silently reset to the empty skeleton — dropping recorded passes *and* the
+  overrides audit trail — and concurrent tool calls could lose each other's
+  writes.
+- **`require_plan` only treats a plan with unchecked items as active.** A
+  completed plan (every item ticked) or an empty file no longer holds the gate
+  open, so finishing a plan correctly re-demands a new one before more source is
+  written.
+- **`auto_format` is scoped to forge-enabled projects** (a `.forge/` dir), like
+  every other hook — no more silent `ruff` runs on `.py` edits in unrelated repos.
+- **Gates check freshness before consuming an override.** `require_check`,
+  `require_review`, `require_audit`, and `require_plan` now confirm the gate is
+  actually unsatisfied before taking a one-shot override, so a green/satisfied
+  action never burns (and never falsely logs) a bypass that wasn't needed.
+- **`require_review` decodes git's C-quoted paths** (octal-escaped non-ASCII /
+  special filenames) before matching them against reference globs, so the
+  reference half of the gate no longer misses a governed file with such a name.
+
+### Documentation
+- Propagated the review gate into the places it had drifted from: `/forge:status`
+  command doc, the scaffolded `CLAUDE.md` template, and the canonical loop string
+  in `/forge:init`.
+- `doc-gap-scanner` no longer assumes the plugin's own layout (`commands/`,
+  `agents/`, `bin/`) — `src/**` is the universal case; plugin-only kinds are
+  optional.
+
 ## [0.6.0] - 2026-06-25
 
 ### Added
@@ -235,7 +270,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/prabhuakshay/forge/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/prabhuakshay/forge/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/prabhuakshay/forge/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/prabhuakshay/forge/compare/v0.3.0...v0.4.0

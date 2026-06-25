@@ -9,6 +9,7 @@ Always exits 0: a formatting failure should not block the edit that triggered it
 """
 
 import os
+import shutil
 import subprocess
 
 import _bootstrap  # noqa: F401
@@ -25,11 +26,16 @@ def _edited_path(payload: dict) -> str | None:
 def main() -> None:
     payload = hookio.read_input()
     project = hookio.project_dir(payload)
+    # Scope to forge-enabled projects, like every other hook. Without this the
+    # PostToolUse formatter would run `uv run ruff` on any .py edit in any repo —
+    # a silent side effect (and a latency hit while uv resolves an environment)
+    # outside the workflow this plugin governs.
+    if not os.path.isdir(os.path.join(project, ".forge")):
+        return
+
     path = _edited_path(payload)
     if not path or not path.endswith(".py") or not os.path.exists(path):
         return
-
-    import shutil
 
     runner = ["uv", "run"] if shutil.which("uv") else []
     if not runner and shutil.which("ruff") is None:

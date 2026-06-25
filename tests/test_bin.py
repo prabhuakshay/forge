@@ -73,6 +73,22 @@ def test_mark_rejects_unknown_gate(project):
     assert "usage" in proc.stderr.lower()
 
 
+# --- plan.py --------------------------------------------------------------
+
+
+def test_plan_sets_active_plan(project):
+    proc = run_bin("plan", ("active", "docs/plans/0002-thing.md"), cwd=project)
+    assert proc.returncode == 0, proc.stderr
+    assert state.load(project)["active_plan"] == "docs/plans/0002-thing.md"
+
+
+def test_plan_rejects_bad_usage(project):
+    proc = run_bin("plan", ("bogus",), cwd=project)
+    assert proc.returncode == 2
+    assert "usage" in proc.stderr.lower()
+    assert state.load(project).get("active_plan") is None
+
+
 # --- audit.py -------------------------------------------------------------
 
 

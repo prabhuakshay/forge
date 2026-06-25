@@ -6,7 +6,10 @@
 
 This project uses the **forge** workflow. The loop is:
 
-`/forge:plan` → `/forge:build` → `/forge:check` → `/forge:audit` → `/forge:release`
+`/forge:plan` → `/forge:build` → `/forge:check` → `/forge:review` → `/forge:audit` → `/forge:release`
+
+(`/forge:review` is a commit gate that applies once the project has binding
+directives or a governing style reference; until then it stays out of the way.)
 
 - **Source** lives in `src/{{PACKAGE}}/`, tests in `tests/`.
 - **Toolchain:** `uv` (env/deps), `ruff` (lint+format), `mypy` (types), `pytest`
@@ -16,7 +19,9 @@ This project uses the **forge** workflow. The loop is:
   `requirements.txt`, `uv pip install`, or hand-edited `pyproject` deps — this
   is enforced by a hook (`.forge/override-uv` is the logged escape hatch).
 - **The gates are enforced, not advisory.** You cannot commit unless
-  `/forge:check` is green, or push/publish unless `/forge:audit` is green.
+  `/forge:check` is green (and, where the project has binding directives or a
+  governing style reference, unless `/forge:review` is green too), or push/publish
+  unless `/forge:audit` is green.
 
 ## Binding directives — read before changing anything
 

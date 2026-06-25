@@ -29,10 +29,14 @@ def main() -> None:
     if not cmdscan.runs_git_subcommand(command, "commit"):
         hookio.allow()
 
-    if state.take_override(project, "check"):
+    # Check freshness BEFORE consuming an override: if the tree is already green
+    # there's nothing to bypass, and burning a one-shot override (and logging a
+    # bypass that wasn't needed) on a clean commit would be both wasteful and
+    # misleading in the audit trail.
+    if state.is_current(project, "check"):
         hookio.allow()
 
-    if state.is_current(project, "check"):
+    if state.take_override(project, "check"):
         hookio.allow()
 
     hookio.deny(

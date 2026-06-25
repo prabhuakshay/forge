@@ -70,6 +70,18 @@ def test_commit_allowed_when_green(project):
     assert run.decision is None and run.code == 0
 
 
+def test_green_tree_does_not_consume_a_pending_override(project):
+    """Freshness is checked before the override: a green commit must not burn a
+    one-shot override (nor log a bypass that never happened)."""
+    write(project, "src/app.py", "x = 1\n")
+    state.record_pass(project, "check")
+    write(project, ".forge/override-check", "armed but unneeded")
+    run = run_hook("require_check", _commit(project))
+    assert run.decision is None  # allowed on its own merit
+    assert os.path.exists(_at(project, ".forge/override-check"))  # NOT consumed
+    assert state.load(project)["overrides"] == []  # nothing logged
+
+
 def test_non_commit_command_is_ignored(project):
     run = run_hook(
         "require_check", {"cwd": project, "tool_input": {"command": "ls -la"}}
@@ -113,6 +125,18 @@ def test_push_allowed_when_audit_green(project):
         {"cwd": project, "tool_input": {"command": "git push origin main"}},
     )
     assert run.decision is None and run.code == 0
+
+
+def test_green_audit_does_not_consume_a_pending_override(project):
+    state.record_pass(project, "audit")
+    write(project, ".forge/override-audit", "armed but unneeded")
+    run = run_hook(
+        "require_audit",
+        {"cwd": project, "tool_input": {"command": "git push origin main"}},
+    )
+    assert run.decision is None
+    assert os.path.exists(_at(project, ".forge/override-audit"))  # NOT consumed
+    assert state.load(project)["overrides"] == []
 
 
 # --- require_uv (PreToolUse / dependency commands) -----------------------
@@ -217,6 +241,33 @@ def test_source_edit_allowed_with_plan_file(project):
     write(project, "docs/plans/feature.md", "- [ ] do the thing")
     run = run_hook("require_plan", _edit_src(project))
     assert run.decision is None
+
+
+def test_completed_plan_does_not_count_as_active(project):
+    """A plan with every item ticked off is done, not active — it must not hold
+    the gate open, or finishing a plan would silently license unbounded edits."""
+    write(project, "docs/plans/feature.md", "- [x] did the thing\n- [x] and another")
+    run = run_hook("require_plan", _edit_src(project))
+    assert run.decision["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+
+def test_active_plan_recorded_in_state_is_honoured(project):
+    """A plan referenced via state.active_plan (the bin/plan.py path) counts as
+    long as it still has open items."""
+    write(project, "docs/plans/0001-x.md", "- [ ] todo")
+    state.set_active_plan(project, "docs/plans/0001-x.md")
+    run = run_hook("require_plan", _edit_src(project))
+    assert run.decision is None
+
+
+def test_existing_plan_does_not_consume_override(project):
+    """Plan presence is checked before the override, so an armed override survives
+    an edit that was allowed on the plan's merit."""
+    write(project, "docs/plans/feature.md", "- [ ] do the thing")
+    write(project, ".forge/override-plan", "armed but unneeded")
+    run = run_hook("require_plan", _edit_src(project))
+    assert run.decision is None
+    assert os.path.exists(_at(project, ".forge/override-plan"))  # NOT consumed
 
 
 def test_non_source_edit_is_allowed(project):

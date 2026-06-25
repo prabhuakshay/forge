@@ -11,20 +11,32 @@ covered, and return a structured list of gaps. You do NOT write anything.
 
 ## Step 1 — Inventory what exists
 
-Glob and read the following, collecting a list of named, describable things:
+A typical Python project keeps its code under `src/` (or a top-level package) with
+a CLI entrypoint or two. Some projects — notably tooling and plugins — also carry
+extra kinds. Glob whatever **actually exists** here; skip the globs that match
+nothing rather than forcing a project into a shape it doesn't have.
 
-- `commands/*.md` — each file is a slash command; extract its `description`
-  frontmatter field and name (`/forge:<basename>`).
-- `agents/*.md` — each file is a sub-agent; extract its `name` and `description`.
-- `bin/*.py` — each script is a tool; read the first 30 lines for its purpose.
-- `lib/**/*.py`, `src/**/*.py` (whichever exists) — public functions and classes
-  (not prefixed with `_`); note module + name + a one-line purpose from context.
-- `templates/` — each template file; its name and rough purpose.
+Always, where present:
+
+- `src/**/*.py`, `lib/**/*.py`, or the project's top-level package — public
+  functions and classes (not prefixed with `_`); note module + name + a one-line
+  purpose from context. This is the universal case; lead with it.
+- Console-script / CLI entrypoints declared in `pyproject.toml`
+  (`[project.scripts]`) — each is a user-facing command.
 - Environment variables: `grep -r "os.environ\|os.getenv\|env(" --include="*.py"`
   to find config keys in use.
 
-Produce a list of items: `{kind, name, purpose}` where `kind` is `command`,
-`agent`, `script`, `symbol`, `template`, or `env_var`.
+Only if they exist (plugin/tooling repos — absent in most projects, so don't
+expect them):
+
+- `commands/*.md` — each file is a slash command; extract its `description`
+  frontmatter field and name.
+- `agents/*.md` — each file is a sub-agent; extract its `name` and `description`.
+- `bin/*.py` — each script is a tool; read the first 30 lines for its purpose.
+- `templates/` — each template file; its name and rough purpose.
+
+Produce a list of items: `{kind, name, purpose}` where `kind` is `symbol`,
+`command`, `agent`, `script`, `template`, or `env_var`.
 
 ## Step 2 — Inventory what is documented
 

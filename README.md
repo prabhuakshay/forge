@@ -11,9 +11,9 @@ come out consistent, stable, well-documented, and honest about their own state.
 ## The loop
 
 ```
-/forge:init  →  /forge:plan  →  /forge:build  →  /forge:check  →  /forge:audit  →  /forge:release
-                     ▲                                                                    │
-                     └──────────────── /forge:decide (capture durable intent) ◄───────────┘
+/forge:init  →  /forge:plan  →  /forge:build  →  /forge:check  →  /forge:review  →  /forge:audit  →  /forge:release
+                     ▲                                                                                       │
+                     └──────────────── /forge:decide (capture durable intent) ◄──────────────────────────────┘
 ```
 
 | Command | Phase | Gate it satisfies |
@@ -35,8 +35,8 @@ come out consistent, stable, well-documented, and honest about their own state.
 
 **The gates are enforced by hooks, not goodwill:**
 
-- **PostToolUse** auto-formats every `.py` you touch (`ruff format` + safe fixes)
-  and invalidates any stale "green" result.
+- **PostToolUse** auto-formats every `.py` you touch in a forge-enabled project
+  (`ruff format` + safe fixes) and invalidates any stale "green" result.
 - **PreToolUse** blocks `git commit` unless `/forge:check` is green for the current
   tree, blocks `git push`/publish unless `/forge:audit` is green, blocks `git
   commit` unless `/forge:review` is green for projects that have binding directives

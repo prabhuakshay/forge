@@ -12,10 +12,15 @@ An "active plan" = a recorded plan in state, or any checklist under docs/plans/.
 """
 
 import os
+import re
 
 import _bootstrap  # noqa: F401
 
 from lib import hookio, state
+
+# An unchecked Markdown checklist item: `- [ ]` / `* [ ]` (any indent). A plan
+# whose items are all ticked off is *complete*, not active — see _has_active_plan.
+_OPEN_ITEM = re.compile(r"(?m)^\s*[-*]\s+\[ \]")
 
 
 def _is_source_py(path: str) -> bool:
@@ -25,14 +30,37 @@ def _is_source_py(path: str) -> bool:
     return norm.startswith("src/") or "/src/" in norm
 
 
-def _has_active_plan(project: str) -> bool:
-    if state.load(project).get("active_plan"):
-        return True
-    plans = os.path.join(project, "docs", "plans")
+def _has_open_items(path: str) -> bool:
+    """True if `path` is a readable plan with at least one unchecked item."""
     try:
-        return any(n.endswith(".md") for n in os.listdir(plans))
+        with open(path, encoding="utf-8") as fh:
+            return bool(_OPEN_ITEM.search(fh.read()))
     except OSError:
         return False
+
+
+def _has_active_plan(project: str) -> bool:
+    """An active plan is one with work left to do — at least one unchecked
+    checklist item. A completed plan (every item ticked) or an empty file no
+    longer holds the gate open, so finishing a plan correctly re-demands a new
+    one before more source is written. We check the recorded `active_plan` first,
+    then any checklist under docs/plans/."""
+    candidates: list[str] = []
+    active = state.load(project).get("active_plan")
+    if isinstance(active, str) and active:
+        candidates.append(
+            active if os.path.isabs(active) else os.path.join(project, active)
+        )
+    plans = os.path.join(project, "docs", "plans")
+    try:
+        candidates += [
+            os.path.join(plans, n)
+            for n in sorted(os.listdir(plans))
+            if n.endswith(".md")
+        ]
+    except OSError:
+        pass
+    return any(_has_open_items(p) for p in candidates)
 
 
 def main() -> None:
@@ -46,10 +74,12 @@ def main() -> None:
     if not _is_source_py(path):
         hookio.allow()
 
-    if state.take_override(project, "plan"):
+    # Active plan before override: if one exists there's nothing to bypass, so
+    # don't consume (and log) a one-shot override needlessly. See require_check.
+    if _has_active_plan(project):
         hookio.allow()
 
-    if _has_active_plan(project):
+    if state.take_override(project, "plan"):
         hookio.allow()
 
     hookio.deny(

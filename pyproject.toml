@@ -6,7 +6,7 @@
 # the same bar forge holds its users to.
 [project]
 name = "forge-plugin"
-version = "0.6.0"
+version = "0.7.0"
 description = "Dev tooling for the forge Claude Code plugin"
 requires-python = ">=3.10"
 license = "MIT"
@@ -23,6 +23,12 @@ testpaths = ["tests"]
 addopts = "-q"
 
 [tool.coverage.run]
+# Measured coverage is scoped to lib/ — the importable core, where the real
+# branching logic lives. bin/ and hooks/scripts/ are thin entrypoints exercised
+# end-to-end as subprocesses (tests/test_bin.py, tests/test_hooks_*.py); coverage
+# can't trace a spawned process, so including them here would report a misleading
+# 0% despite their behaviour being asserted. Keep meaningful logic in lib/ so this
+# number stays honest.
 source = ["lib"]
 
 [tool.coverage.report]

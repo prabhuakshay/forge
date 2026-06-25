@@ -53,7 +53,7 @@ def main() -> None:
         rel = _rel_in_project(project, path)
         if rel:
             state.add_dirty(project, rel)
-    elif base.endswith(_AUDIT_TRIGGERS) or base == ".env.example":
+    elif base.endswith(_AUDIT_TRIGGERS):  # includes .env.example
         state.invalidate(project, "audit")
 
 

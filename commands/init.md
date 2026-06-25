@@ -48,8 +48,10 @@ placeholders (`{{PROJECT_NAME}}`, `{{PACKAGE}}`, `{{DESCRIPTION}}`, `{{AUTHOR}}`
    test. Fix anything that isn't.
 
 7. **Report** the created structure and tell the user the loop:
-   `/forge:plan → /forge:build → /forge:check → /forge:audit → /forge:release`,
-   that design decisions are captured with `/forge:decide`, and that style
-   references are managed with `/forge:reference`.
+   `/forge:plan → /forge:build → /forge:check → /forge:review → /forge:audit →
+   /forge:release` (review is a commit gate that activates once the project has
+   binding directives or a governing reference), that design decisions are
+   captured with `/forge:decide`, and that style references are managed with
+   `/forge:reference`.
 
 Do not invent product features or write speculative code — scaffold only.

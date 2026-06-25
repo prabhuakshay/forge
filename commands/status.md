@@ -13,8 +13,10 @@ This reads `.forge/state.json` (and the installed references and directives) and
 prints, in one screen:
 
 - the current **phase** and **active plan**;
-- each **gate** — `check` (commit) and `audit` (push/publish) — as green for the
-  current tree, **stale** (code changed since it last passed), or never run;
+- each **gate** — `check` (commit), `review` (commit; shown only when the project
+  has binding directives or a governing reference), and `audit` (push/publish) —
+  as green for the current tree, **stale** (code changed since it last passed), or
+  never run;
 - the **dirty set**: source files edited since the last green check;
 - installed **style references** and their scope;
 - the count of binding **directives**;

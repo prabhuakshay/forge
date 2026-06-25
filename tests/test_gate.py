@@ -77,6 +77,39 @@ def test_run_fast_passes_type_paths_through(monkeypatch):
     assert seen[-1] == ["uv", "run", "mypy", "src/a.py"]
 
 
+def test_run_marks_step_failed_on_timeout(monkeypatch):
+    """A hung tool must surface as a real failure (not a skip), so the gate goes
+    red rather than silently passing — and the message names the timeout."""
+    monkeypatch.setattr(gate.shutil, "which", lambda tool: "/usr/bin/uv")
+
+    def boom(cmd, **kwargs):
+        raise gate.subprocess.TimeoutExpired(cmd, 600)
+
+    monkeypatch.setattr(gate.subprocess, "run", boom)
+    step = gate.run_lint("/proj")
+    assert not step.ok and not step.skipped
+    assert "timed out" in step.output
+
+
+def test_run_full_aggregates_all_four_steps(monkeypatch):
+    _capture_cmd(monkeypatch)
+    result = gate.run_full("/proj")
+    assert [s.name for s in result.steps] == [
+        "ruff format",
+        "ruff check",
+        "mypy",
+        "pytest",
+    ]
+    assert result.ok  # every fake step returns 0
+
+
+def test_run_fast_skips_the_test_step(monkeypatch):
+    _capture_cmd(monkeypatch)
+    result = gate.run_fast("/proj")
+    # format + lint + types, but no pytest — the cheap "is the tree broken?" check.
+    assert [s.name for s in result.steps] == ["ruff format", "ruff check", "mypy"]
+
+
 def test_run_skips_missing_tool_without_uv(monkeypatch):
     """No uv and the tool absent → skipped, not a hard failure (graceful on a
     half-initialised repo)."""

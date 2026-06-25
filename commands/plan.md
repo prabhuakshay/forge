@@ -22,8 +22,12 @@ directive. If the request seems to require violating one, stop and say so — of
 3. **Write `docs/plans/NNNN-<slug>.md`** (next free number) as an **atomic
    checklist** — each item independently implementable and verifiable, with a
    `## Verification` section stating how each will be tested.
-4. Record the plan as active: append its path to `.forge/state.json`'s
-   `active_plan` field (read-modify-write the JSON; create `.forge` if missing).
+4. Record the plan as active with the helper (never hand-edit `state.json` — a
+   malformed write corrupts workflow state):
+
+   ```bash
+   python3 "$CLAUDE_PLUGIN_ROOT/bin/plan.py" active docs/plans/NNNN-<slug>.md
+   ```
 
 ## Watch for durable decisions
 
