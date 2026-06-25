@@ -1,0 +1,22 @@
+FROM python:{{PYTHON_VERSION}}-slim
+
+WORKDIR /app
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Copy project files
+COPY pyproject.toml uv.lock ./
+COPY src/ ./src/
+
+# Install all dependencies including dev
+RUN uv sync --all-extras
+
+# Install watchfiles for hot reload
+RUN uv pip install watchfiles
+
+# Copy rest of project for development
+COPY . .
+
+# Run with hot reload
+CMD ["uv", "run", "watchfiles", "--ignore-paths", ".git,.pytest_cache,.ruff_cache,.mypy_cache", "python", "-m", "{{PACKAGE}}"]

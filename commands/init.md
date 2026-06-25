@@ -35,7 +35,8 @@ placeholders (`{{PROJECT_NAME}}`, `{{PACKAGE}}`, `{{DESCRIPTION}}`, `{{AUTHOR}}`
    - Copy & substitute: `pyproject.toml`, `.gitignore`, `.env.example`,
      `CHANGELOG.md`, `CLAUDE.md`, `README.md` (write a real quickstart),
      `.pre-commit-config.yaml`, `.github/workflows/ci.yml`,
-     `scripts/check_env_sync.py`, and the whole `docs/` tree
+     `scripts/check_env_sync.py`, `Dockerfile`, `Dockerfile.dev`, `docker-compose.yml`,
+     `docker-compose.dev.yml`, `.dockerignore`, and the whole `docs/` tree
      (`index.md`, `architecture.md`, `decisions/README.md`, `decisions/_template.md`).
    - Create `.forge/directives.md` from `templates/directives.md.tmpl`.
 
