@@ -118,6 +118,14 @@ you can trust to be literal, and the rest as proposers whose output you read.
 stdlib-only and shells out to the project's `uv run …`, so hooks work even before
 the project's environment exists.
 
+## Requirements
+
+- **Python projects only.** Every gate is built around the Python toolchain
+  above; forge has nothing to enforce on a non-Python repo.
+- **Linux and macOS only (POSIX).** The hooks invoke `python3` and the workflow
+  state is guarded by POSIX file locking (`fcntl`), so concurrent tool calls
+  can't corrupt it. Windows is not supported.
+
 ## Layout
 
 ```
@@ -125,7 +133,7 @@ the project's environment exists.
 commands/                    the workflow commands
 agents/                      doc-sync, doc-gap-scanner, quality, test-author, reference auditors
 hooks/                       hooks.json + enforcement & injection scripts
-lib/                         stdlib-only core (state, gate, env_scan, doc_claims, decisions, references, cmdscan, hookio, status)
+lib/                         stdlib-only core (state, fingerprint, gate, env_scan, doc_claims, decisions, references, cmdscan, hookio, status)
 bin/                         CLI entrypoints the commands call
 references/                  starter style-reference library (django, cli, python-base)
 templates/                   artifacts /forge:init scaffolds into a project

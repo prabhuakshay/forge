@@ -6,6 +6,49 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-06-25
+
+### Fixed
+- **The green-gate fingerprint no longer misses a same-second edit.** A new
+  stat-keyed digest cache speeds up `code_fingerprint`, but a naive `(mtime,
+  size)` cache would wrongly trust a same-size edit that lands in the same
+  clock-granularity tick as the last hash (the classic "racy clean" problem — and
+  not theoretical: fast/tmpfs writes hit it). The cache now applies git's rule —
+  an entry is trusted only when the file's mtime is in a *strictly earlier whole
+  second* than the recorded cache build time — so a same-second change is always
+  re-hashed and the content-addressed guarantee is never weakened.
+
+### Changed
+- **Workflow state is now concurrency-safe.** Claude Code can run tools (and
+  therefore hooks) at once; two updaters racing on a read-modify-write of
+  `.forge/state.json` could let the second `os.replace` silently drop the first's
+  change — a lost `dirty_py` entry, or worse a dropped `overrides` audit record.
+  Every state mutation now runs under an exclusive POSIX advisory lock
+  (`state.locked`, a `.forge/.state.lock` sidecar), so updates serialise instead
+  of clobbering each other.
+- **`code_fingerprint` only re-reads what changed.** The per-commit hash was
+  reading and SHA-256-ing every first-party `.py` on each gate check; it now skips
+  files whose size and mtime prove they weren't touched since the last build (via
+  a git-ignored `.forge/fpcache.json` cache), keeping the cost proportional to
+  what changed rather than to repo size. The fingerprinting logic moved into a new
+  dependency-free `lib/fingerprint.py`; `state` re-exports `code_fingerprint`, so
+  callers are unchanged.
+
+### Documentation
+- README now states forge's platform requirements plainly: **Python projects
+  only**, and **Linux/macOS only** — the hooks invoke `python3` and the workflow
+  state relies on POSIX file locking (`fcntl`), so Windows is unsupported. The
+  plugin manifests carry the same constraint in their description and keywords.
+- `docs/state-schema.md` documents the two new local-only sidecar files
+  (`.state.lock`, `fpcache.json`), including the cache structure and its
+  racy-clean guard.
+
+### Internal
+- A meta-test (`tests/test_command_refs.py`) now asserts the prompt layer stays
+  wired up: every `bin/*.py` a command invokes, every agent it names, and every
+  script in `hooks.json` must resolve to a real file — so a rename or typo there
+  can't ship undetected.
+
 ## [0.8.0] - 2026-06-25
 
 ### Changed
@@ -314,7 +357,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/prabhuakshay/forge/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/prabhuakshay/forge/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/prabhuakshay/forge/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/prabhuakshay/forge/compare/v0.5.0...v0.6.0

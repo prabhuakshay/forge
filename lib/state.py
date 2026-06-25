@@ -13,47 +13,71 @@ whole tree on every turn.
 State lives in <project>/.forge/state.json. It is intentionally a plain JSON
 file (not git-tracked metadata) so it survives across sessions and is trivial to
 inspect or reset by hand.
+
+Every read-modify-write of that file is serialised under a POSIX advisory lock
+(see `locked`), because Claude Code can run tools — and therefore hooks —
+concurrently, and two updaters racing on load→mutate→save would let the second
+`os.replace` silently drop the first's change. That dependency on `fcntl` is why
+forge is POSIX-only (Linux/macOS); Windows is not supported.
 """
 
 from __future__ import annotations
 
-import hashlib
+import contextlib
+import fcntl
 import json
 import os
 import tempfile
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from typing import Any
 
-STATE_DIRNAME = ".forge"
+# The source-tree fingerprint lives in its own dependency-free module; re-exported
+# here (code_fingerprint) since callers reach it through `state`.
+from lib.fingerprint import STATE_DIRNAME, code_fingerprint
+
 STATE_FILENAME = "state.json"
+
+# Local-only (gitignored) lock file guarding the read-modify-write of state.json.
+LOCK_FILENAME = ".state.lock"
 
 # The gates that accept a one-shot override sentinel (.forge/override-<gate>).
 # Kept here so the /forge:override CLI and the status report agree on the set.
 OVERRIDE_GATES = ("check", "audit", "review", "stop", "plan", "uv")
 
-# Directories that never contain first-party source but can hold thousands of
-# .py files. Walking them would make the fingerprint slow and, worse, unstable
-# (a dependency reinstall would invalidate every green check).
-_SKIP_DIRS = {
-    ".git",
-    ".venv",
-    "venv",
-    "env",
-    "__pycache__",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".ruff_cache",
-    "node_modules",
-    "build",
-    "dist",
-    ".tox",
-    ".eggs",
-    ".forge",
-}
+__all__ = ["STATE_DIRNAME", "code_fingerprint"]  # re-exports used by callers
 
 
 def _state_path(project_dir: str) -> str:
     return os.path.join(project_dir, STATE_DIRNAME, STATE_FILENAME)
+
+
+@contextlib.contextmanager
+def locked(project_dir: str) -> Iterator[None]:
+    """Serialise a load→mutate→save sequence across concurrent processes.
+
+    Wraps the body in an exclusive POSIX advisory lock held on a sibling
+    `.forge/.state.lock` file, so two hooks firing at once can't each read the
+    same state, change different fields, and have the second write clobber the
+    first (a lost dirty-set entry, or — worse — a missing override-trail record).
+    The lock is per open-file-description, so callers must NOT nest `locked`
+    blocks in one thread: that would deadlock waiting on a lock the same thread
+    already holds. Every mutator below takes the lock exactly once.
+    """
+    os.makedirs(os.path.join(project_dir, STATE_DIRNAME), exist_ok=True)
+    fd = os.open(
+        os.path.join(project_dir, STATE_DIRNAME, LOCK_FILENAME),
+        os.O_CREAT | os.O_RDWR,
+        0o644,
+    )
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
 
 
 def now_iso() -> str:
@@ -106,70 +130,23 @@ def save(project_dir: str, state: dict[str, Any]) -> None:
         raise
 
 
-def _iter_source_files(project_dir: str):
-    """Yield (relpath, fullpath) for every first-party .py file, in a stable
-    sorted order so the fingerprint is deterministic across runs and platforms.
-    Dependency/vendor/cache dirs are pruned so the walk stays bounded to code we
-    actually own."""
-    for root, dirs, files in os.walk(project_dir):
-        # Prune skip-dirs in place so os.walk doesn't descend into them.
-        dirs[:] = sorted(d for d in dirs if d not in _SKIP_DIRS)
-        for name in sorted(files):
-            if name.endswith(".py"):
-                full = os.path.join(root, name)
-                yield os.path.relpath(full, project_dir), full
-
-
-def _file_digest(path: str) -> bytes:
-    """sha256 of a file's bytes, read in chunks to bound memory on large files.
-    An unreadable file still perturbs the fingerprint deterministically rather
-    than silently dropping out of it."""
-    h = hashlib.sha256()
-    try:
-        with open(path, "rb") as fh:
-            for chunk in iter(lambda: fh.read(65536), b""):
-                h.update(chunk)
-    except OSError:
-        return b"<unreadable>"
-    return h.digest()
-
-
-def code_fingerprint(project_dir: str) -> str:
-    """A content-addressed fingerprint of the first-party Python source tree.
-
-    We hash each file's relative path plus a sha256 of its *bytes*. An earlier
-    version keyed on size+mtime to save the read, but mtime churns on operations
-    that don't change a single byte — `git checkout`, branch switches, stash
-    pops, fresh clones — and every one of them silently invalidated a green gate
-    and forced a needless re-check. Content hashing makes "green" survive exactly
-    as long as the code is byte-for-byte unchanged, however it got that way.
-    Reading first-party source is the cost; pruning vendor/venv dirs (_SKIP_DIRS)
-    keeps it proportional to the code, not the dependency tree. Path is included
-    so a rename still registers as a change.
-    """
-    h = hashlib.sha256()
-    for rel, full in _iter_source_files(project_dir):
-        h.update(rel.encode("utf-8"))
-        h.update(b"\0")
-        h.update(_file_digest(full))
-    return h.hexdigest()
-
-
 def record_pass(project_dir: str, gate: str) -> None:
     """Mark `gate` ('check' or 'audit') green against the current tree.
 
     A green *code* check proves the whole tree, so it also clears the dirty set:
     nothing is left outstanding for the incremental Stop gate to re-check.
     """
-    state = load(project_dir)
-    state[f"last_{gate}"] = {
-        "passed": True,
-        "fingerprint": code_fingerprint(project_dir),
-        "at": now_iso(),
-    }
-    if gate == "check":
-        state["dirty_py"] = []
-    save(project_dir, state)
+    fingerprint = code_fingerprint(project_dir)  # outside the lock: only reads
+    with locked(project_dir):
+        state = load(project_dir)
+        state[f"last_{gate}"] = {
+            "passed": True,
+            "fingerprint": fingerprint,
+            "at": now_iso(),
+        }
+        if gate == "check":
+            state["dirty_py"] = []
+        save(project_dir, state)
 
 
 def set_active_plan(project_dir: str, plan_path: str) -> None:
@@ -179,9 +156,10 @@ def set_active_plan(project_dir: str, plan_path: str) -> None:
     hand-edit state.json (a malformed write there would corrupt workflow state).
     Stored verbatim — callers pass a repo-relative path like
     `docs/plans/0003-thing.md`."""
-    st = load(project_dir)
-    st["active_plan"] = plan_path
-    save(project_dir, st)
+    with locked(project_dir):
+        st = load(project_dir)
+        st["active_plan"] = plan_path
+        save(project_dir, st)
 
 
 def add_dirty(project_dir: str, rel_path: str) -> None:
@@ -190,14 +168,15 @@ def add_dirty(project_dir: str, rel_path: str) -> None:
     The Stop gate type-checks only these files instead of the whole tree, so an
     every-turn mypy stays proportional to what changed rather than to repo size.
     Cleared when a full code gate passes (see record_pass)."""
-    state = load(project_dir)
-    dirty = state.get("dirty_py")
-    if not isinstance(dirty, list):
-        dirty = []
-    if rel_path not in dirty:
-        dirty.append(rel_path)
-        state["dirty_py"] = dirty
-        save(project_dir, state)
+    with locked(project_dir):
+        state = load(project_dir)
+        dirty = state.get("dirty_py")
+        if not isinstance(dirty, list):
+            dirty = []
+        if rel_path not in dirty:
+            dirty.append(rel_path)
+            state["dirty_py"] = dirty
+            save(project_dir, state)
 
 
 def dirty_files(project_dir: str) -> list[str]:
@@ -224,20 +203,29 @@ def is_current(project_dir: str, gate: str) -> bool:
 def invalidate(project_dir: str, gate: str = "check") -> None:
     """Drop a recorded pass — called when source changes so a stale green can't
     wave a commit through. Cheap no-op if there was nothing to drop."""
-    state = load(project_dir)
-    if state.get(f"last_{gate}"):
-        state[f"last_{gate}"] = None
-        save(project_dir, state)
+    with locked(project_dir):
+        state = load(project_dir)
+        if state.get(f"last_{gate}"):
+            state[f"last_{gate}"] = None
+            save(project_dir, state)
+
+
+def _append_override(state: dict[str, Any], gate: str, reason: str) -> None:
+    """Append one override record to `state` in place (caller holds the lock and
+    saves). Factored out so take_override can record under its own single lock
+    instead of nesting a second one via log_override — which would deadlock."""
+    state.setdefault("overrides", []).append(
+        {"gate": gate, "reason": reason, "at": now_iso()}
+    )
 
 
 def log_override(project_dir: str, gate: str, reason: str) -> None:
     """Record that a human deliberately bypassed `gate`. Overrides are kept, not
     consumed: the audit trail of *what was skipped and why* is the whole point."""
-    state = load(project_dir)
-    state.setdefault("overrides", []).append(
-        {"gate": gate, "reason": reason, "at": now_iso()}
-    )
-    save(project_dir, state)
+    with locked(project_dir):
+        state = load(project_dir)
+        _append_override(state, gate, reason)
+        save(project_dir, state)
 
 
 def request_override(project_dir: str, gate: str, reason: str = "") -> str:
@@ -287,17 +275,20 @@ def take_override(project_dir: str, gate: str) -> dict[str, Any] | None:
     one gated action and never silently lingers.
     """
     flag = os.path.join(project_dir, STATE_DIRNAME, f"override-{gate}")
-    if not os.path.exists(flag):
-        return None
-    reason = ""
-    try:
-        with open(flag, encoding="utf-8") as fh:
-            reason = fh.read().strip()
-    except OSError:
-        pass
-    try:
-        os.remove(flag)
-    except OSError:
-        pass
-    log_override(project_dir, gate, reason or "(no reason given)")
+    with locked(project_dir):
+        if not os.path.exists(flag):
+            return None
+        reason = ""
+        try:
+            with open(flag, encoding="utf-8") as fh:
+                reason = fh.read().strip()
+        except OSError:
+            pass
+        try:
+            os.remove(flag)
+        except OSError:
+            pass
+        state = load(project_dir)
+        _append_override(state, gate, reason or "(no reason given)")
+        save(project_dir, state)
     return {"gate": gate, "reason": reason}

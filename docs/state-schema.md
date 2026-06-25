@@ -97,8 +97,29 @@ edit:
 
 When the session id changes, the record resets, so it never grows without bound.
 
+## Sibling files in `.forge/`
+
+Alongside `state.json`, two local-only (git-ignored) files support it. Neither is
+shared and both are safe to delete — they are rebuilt on demand:
+
+- **`.state.lock`** — a zero-content lock file. Every read-modify-write of
+  `state.json` runs under an exclusive POSIX advisory lock held here
+  (`state.locked`), so concurrent hooks can't each load the same state, change
+  different fields, and have one `save` clobber the other (a lost `dirty_py`
+  entry or — worse — a dropped `overrides` record). This is why forge requires a
+  POSIX platform (Linux/macOS); `fcntl` has no Windows equivalent.
+- **`fpcache.json`** — a stat-keyed digest cache for `code_fingerprint`,
+  `{"built_ns": <int>, "files": {"<relpath>": {"mtime", "size", "digest"}}}`. It
+  lets the fingerprint skip re-reading files whose size and mtime prove they
+  weren't touched since the last build, keeping the per-commit hash proportional
+  to what changed rather than to repo size. It is a pure accelerator: a file is
+  trusted only when its mtime is in a strictly earlier whole second than the
+  recorded `built_ns` (a racy-clean guard, like git's), so a same-second edit is
+  always re-hashed and the content-addressed fingerprint is never weakened.
+
 ## Resetting
 
 Deleting `.forge/state.json` (or the whole `.forge/` directory) resets all
 workflow state. The next gate run recreates it. Removing only `last_check` /
-`last_audit` (set to `null`) forces the corresponding gate to run again.
+`last_audit` (set to `null`) forces the corresponding gate to run again. The
+sibling `fpcache.json` and `.state.lock` are rebuilt automatically too.

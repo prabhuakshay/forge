@@ -190,15 +190,16 @@ def injection_block(ref: Reference) -> str:
 def _track(project_dir: str, session_id: str, name: str, *, write: bool) -> bool:
     from lib import state  # local import: avoid a cycle at module load
 
-    st = state.load(project_dir)
-    track = st.get("ref_injection")
-    if not isinstance(track, dict) or track.get("session") != session_id:
-        track = {"session": session_id, "names": []}
-    already = name in track["names"]
-    if write and not already:
-        track["names"].append(name)
-        st["ref_injection"] = track
-        state.save(project_dir, st)
+    with state.locked(project_dir):
+        st = state.load(project_dir)
+        track = st.get("ref_injection")
+        if not isinstance(track, dict) or track.get("session") != session_id:
+            track = {"session": session_id, "names": []}
+        already = name in track["names"]
+        if write and not already:
+            track["names"].append(name)
+            st["ref_injection"] = track
+            state.save(project_dir, st)
     return already
 
 

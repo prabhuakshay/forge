@@ -238,3 +238,49 @@ def test_pending_overrides_lists_each_armed_gate(project):
 def test_pending_overrides_empty_without_forge_dir(tmp_path):
     # No .forge/ at all → nothing armed, no crash.
     assert state.pending_overrides(str(tmp_path)) == {}
+
+
+def test_add_dirty_is_concurrency_safe(project):
+    """Concurrent add_dirty calls must not lose updates. Each call is a
+    read-modify-write of state.json; without the per-state lock two of them could
+    both load the same dirty set and the second save() would clobber the first's
+    entry. The lock serialises them, so every file lands."""
+    import threading
+
+    names = [f"src/f{i}.py" for i in range(40)]
+    for n in names:
+        write(project, n, "")
+
+    start = threading.Barrier(len(names))
+
+    def worker(rel: str) -> None:
+        start.wait()  # release all threads at once to maximise RMW overlap
+        state.add_dirty(project, rel)
+
+    threads = [threading.Thread(target=worker, args=(n,)) for n in names]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert sorted(state.dirty_files(project)) == sorted(names)
+
+
+def test_overrides_are_concurrency_safe(project):
+    """The override audit trail is append-only and must never drop a record under
+    concurrent writes — that would make a logged bypass silently vanish."""
+    import threading
+
+    start = threading.Barrier(30)
+
+    def worker(i: int) -> None:
+        start.wait()
+        state.log_override(project, "check", f"reason {i}")
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(30)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert len(state.load(project)["overrides"]) == 30
