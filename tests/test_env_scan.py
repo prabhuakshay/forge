@@ -27,6 +27,39 @@ def test_scan_code_finds_all_read_forms(project):
     assert "_PRIVATE" not in found
 
 
+def test_scan_code_finds_pop_and_setdefault_reads(project):
+    """`.pop()` and `.setdefault()` read the variable just like `.get()`, so a
+    var only ever accessed that way must still register as a read."""
+    code = (
+        "import os\n"
+        'a = os.environ.pop("CACHE_URL", None)\n'
+        'b = os.environ.setdefault("WORKERS", "4")\n'
+    )
+    write(project, "src/app.py", code)
+    found = env_scan.scan_code(project)
+    assert {"CACHE_URL", "WORKERS"} <= found
+
+
+def test_scan_code_finds_lowercase_and_mixed_case_reads(project):
+    """Env vars are case-sensitive on POSIX; a lower/mixed-case read is real
+    config that onboarding must document, so it must not be silently dropped."""
+    code = 'import os\nx = os.getenv("debug_mode")\ny = os.environ.get("Api_Token")\n'
+    write(project, "src/app.py", code)
+    found = env_scan.scan_code(project)
+    assert {"debug_mode", "Api_Token"} <= found
+
+
+def test_lowercase_read_drift_respects_case(project):
+    """A verbatim-case read compares verbatim against .env.example: documenting
+    DEBUG_MODE does not satisfy a os.getenv("debug_mode") read, matching how the
+    OS resolves the two as distinct variables."""
+    write(project, "src/app.py", 'import os\nx = os.getenv("debug_mode")\n')
+    write(project, ".env.example", "DEBUG_MODE=1\n")
+    drift = env_scan.analyse(project)
+    assert drift.undocumented == ["debug_mode"]
+    assert "DEBUG_MODE" in drift.stale
+
+
 def test_parse_env_example(project):
     write(project, ".env.example", "# config\nDATABASE_URL=\nPORT=8000\n\nBAD LINE\n")
     assert env_scan.parse_env_example(project) == {"DATABASE_URL", "PORT"}

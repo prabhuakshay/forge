@@ -152,6 +152,53 @@ def test_save_cleans_up_temp_on_replace_failure(project, monkeypatch):
     assert leftovers == []
 
 
+def test_fingerprint_tolerates_unreadable_file(project):
+    """An unreadable source file (here a dangling symlink) must perturb the
+    fingerprint deterministically, not crash the walk."""
+    write(project, "src/app.py", "x = 1\n")
+    os.symlink(
+        os.path.join(project, "does-not-exist"),
+        os.path.join(project, "src", "broken.py"),
+    )
+    fp = state.code_fingerprint(project)
+    assert len(fp) == 64  # a real sha256 hex digest, no exception
+    assert state.code_fingerprint(project) == fp  # and it's stable
+
+
+def test_save_cleans_up_temp_even_if_remove_also_fails(project, monkeypatch):
+    """Belt-and-braces: if both the replace AND the cleanup remove fail, save()
+    must still propagate the original error rather than mask it with the remove's."""
+    import lib.state as state_mod
+
+    def fail_replace(src, dst):
+        raise OSError("replace")
+
+    def fail_remove(path):
+        raise OSError("remove")
+
+    monkeypatch.setattr(state_mod.os, "replace", fail_replace)
+    monkeypatch.setattr(state_mod.os, "remove", fail_remove)
+    try:
+        state.set_active_plan(project, "docs/plans/0001-a.md")
+        raise AssertionError("expected the replace failure to propagate")
+    except OSError as exc:
+        assert "replace" in str(exc)  # the original error, not the remove's
+
+
+def test_add_dirty_recovers_from_corrupt_dirty_field(project):
+    """If dirty_py is somehow not a list (hand-edit / older schema), add_dirty
+    resets it to a list rather than crashing."""
+    write(project, ".forge/state.json", '{"dirty_py": "corrupt"}')
+    write(project, "src/a.py", "")
+    state.add_dirty(project, "src/a.py")
+    assert state.dirty_files(project) == ["src/a.py"]
+
+
+def test_dirty_files_returns_empty_on_corrupt_dirty_field(project):
+    write(project, ".forge/state.json", '{"dirty_py": 42}')
+    assert state.dirty_files(project) == []
+
+
 def test_override_is_one_shot_and_logged(project):
     flag = os.path.join(project, ".forge", "override-check")
     with open(flag, "w", encoding="utf-8") as fh:

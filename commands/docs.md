@@ -58,7 +58,7 @@ For each gap:
 After writing:
 
 ```
-/forge:docs complete
+Documentation pass complete
   Gaps found:    N (X MISSING, Y THIN)
   Documented:    M  (list: name → file)
   Skipped:       K  (list: name — reason)

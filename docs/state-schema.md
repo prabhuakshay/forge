@@ -31,7 +31,7 @@ special-case "no state yet".
 | `last_check` | object \| null | The last green **code gate** result (see *Gate records* below), or null if none/stale. |
 | `last_audit` | object \| null | The last green **audit** result, same shape as `last_check`. |
 | `last_review` | object \| null | The last green **review** result, same shape as `last_check`. Recorded by `/forge:review` when it comes back clean; gates `git commit` only for projects with binding directives or a governing reference. |
-| `dirty_py` | string[] | Source files edited since the last green check — the Stop gate type-checks only these. Cleared when a full check passes. |
+| `dirty_py` | string[] | Source files edited since the last green code check — the Stop gate type-checks only these. **Only a green `check` clears it** (see below); it accumulates across a session until then. |
 | `overrides` | object[] | Append-only audit trail of deliberate gate bypasses (see *Overrides* below). |
 | `ref_injection` | object | Per-session bookkeeping for style-reference injection (see *Reference injection* below). Written by `lib/references.py`. |
 
@@ -55,8 +55,14 @@ Each is an object recorded by `state.record_pass` when a gate passes:
   that leaves bytes unchanged does not.
 - `at` is a UTC ISO-8601 timestamp (`now_iso`, seconds precision).
 
-A green `check` clears `dirty_py`, because a passing full gate proves the whole
-tree and leaves nothing outstanding for the incremental Stop gate.
+A green `check` clears `dirty_py`, because a passing full gate (which *runs the
+tests*) proves the whole tree and leaves nothing outstanding for the incremental
+Stop gate. A green `audit` or `review` deliberately does **not** clear it: those
+gates don't run the test suite, so the edited files still need the Stop gate's
+type check. The set therefore grows across a session until the next full `check`
+— this is intended, not a leak. It stays bounded to real source files
+(`dirty_files` drops paths that no longer exist), and because mypy follows
+imports, re-checking the accumulated set is correct rather than merely cheap.
 
 ### Overrides (`overrides`)
 

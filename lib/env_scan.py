@@ -18,12 +18,27 @@ import os
 import re
 from dataclasses import dataclass
 
-# os.environ["X"] / os.environ['X'] / os.environ.get("X") / os.getenv("X").
-# The opener is `[` for subscripts and `(` for the .get(...) call, so we accept
-# either — an earlier version only allowed `[`, which silently missed every
-# os.environ.get("X") read and let those vars escape drift detection.
-_OS_ENV = re.compile(r"""os\.environ(?:\.get)?\s*[\[(]?\s*['"]([A-Z][A-Z0-9_]*)['"]""")
-_GETENV = re.compile(r"""os\.getenv\(\s*['"]([A-Z][A-Z0-9_]*)['"]""")
+# os.environ["X"] / os.environ.get("X") / os.environ.pop("X") /
+# os.environ.setdefault("X", ...) / os.getenv("X").
+#
+# Two earlier blind spots are deliberately closed here:
+#   * the opener is `[` for subscripts and `(` for the method calls, so we accept
+#     either — the first cut allowed only `[` and silently missed every
+#     os.environ.get(...) read;
+#   * `.pop()` and `.setdefault()` read the variable just as `.get()` does, so
+#     they count too — omitting them let a real read escape drift detection.
+#
+# Names are captured in ANY case, not UPPER_CASE only. Environment variables are
+# case-sensitive on POSIX, so `os.getenv("debug_mode")` is a real read that
+# onboarding must document; matching only `[A-Z…]` quietly dropped every
+# lower/mixed-case read on the floor. The drift check compares names verbatim, so
+# a read and its .env.example entry must agree on case — which is exactly the
+# contract the OS enforces at runtime. (pydantic-settings is the one exception:
+# it resolves env vars case-insensitively, so _settings_fields still upper-cases.)
+_OS_ENV = re.compile(
+    r"""os\.environ(?:\.(?:get|pop|setdefault))?\s*[\[(]?\s*['"]([A-Za-z_][A-Za-z0-9_]*)['"]"""
+)
+_GETENV = re.compile(r"""os\.getenv\(\s*['"]([A-Za-z_][A-Za-z0-9_]*)['"]""")
 
 # A pydantic-settings field becomes an env var by its (upper-cased) name. We only
 # scan within a class that visibly derives from BaseSettings/Settings to avoid

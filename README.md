@@ -43,8 +43,15 @@ come out consistent, stable, well-documented, and honest about their own state.
   or a governing style reference, blocks source edits with no active plan, and
   blocks non-uv dependency commands (pip, `uv pip install`, requirements files) —
   deps go through `uv add`/`uv remove`.
-- **Stop** won't let the agent end a turn on a broken tree (lint/types red, or env
-  vars read in code but undocumented in `.env.example`). If a broken state is a
+- **Stop** fires automatically when the agent tries to *end its turn* and won't
+  let it stop on a broken tree. It runs format and lint (whole-tree) and the
+  env-var drift check (vars read in code but undocumented in `.env.example`), plus
+  — only when files have been edited since the last green check — mypy scoped to
+  exactly those files (and skipped entirely when nothing is dirty, since types
+  are already proven; mypy still follows imports out of the changed files, so a
+  cross-file break is still caught). It deliberately skips the test suite, which
+  is the slower commit gate's job. A failure isn't a wall: the reasons are fed
+  back so the agent keeps working until the tree is green. If a broken state is a
   *deliberate* stopping point, `/forge:override stop "<why>"` releases it (logged).
 - **SessionStart** injects the project's binding directives into every session.
 
@@ -94,6 +101,16 @@ are mandatory; `advisory` ones warn. Author your own with
 and config drift do — references travel with the repo in `.forge/references/`, so
 they bind every contributor and agent.
 
+**Two agents are *evidence-bound*; the rest are advisory.** "Grounded by design"
+is a property of the two auditors that gate-adjacent work depends on: the
+`doc-sync-auditor` and the `reference-auditor` must tie every finding to a
+concrete `file:line` (or mark it `UNVERIFIABLE`), so they report real drift
+without hallucinating. The other agents are deliberately *not* held to that bar
+because their job is different: `python-quality-auditor` is a reviewer's opinion,
+`doc-gap-scanner` reports what's *absent* (which has no line to cite), and
+`python-test-author` *writes* tests from a spec. Treat the first two as detectors
+you can trust to be literal, and the rest as proposers whose output you read.
+
 ## Toolchain
 
 `uv` (env/deps) · `ruff` (lint+format) · `mypy` (types, balanced strictness) ·
@@ -108,7 +125,7 @@ the project's environment exists.
 commands/                    the workflow commands
 agents/                      doc-sync, doc-gap-scanner, quality, test-author, reference auditors
 hooks/                       hooks.json + enforcement & injection scripts
-lib/                         stdlib-only core (state, gate, env_scan, doc_claims, decisions, references, cmdscan, hookio)
+lib/                         stdlib-only core (state, gate, env_scan, doc_claims, decisions, references, cmdscan, hookio, status)
 bin/                         CLI entrypoints the commands call
 references/                  starter style-reference library (django, cli, python-base)
 templates/                   artifacts /forge:init scaffolds into a project

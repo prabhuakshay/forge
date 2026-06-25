@@ -16,8 +16,11 @@ not attempt to bypass that — resolve drift instead.
 ## Steps
 
 1. **Decide the bump** from `$ARGUMENTS` (default `patch`) and SemVer: breaking →
-   major, feature → minor, fix → patch. Review the unreleased commits/changes to
-   sanity-check the level.
+   major, feature → minor, fix → patch. List the commits since the last release
+   to sanity-check the level — `git log "$(git describe --tags --abbrev=0)"..HEAD
+   --oneline` (if the repo has no tags yet, `git log --oneline` over the whole
+   history). A breaking change among them forces a higher bump than the argument
+   asked for; say so rather than under-bumping.
 2. **Update the version** in `pyproject.toml` (and `src/<pkg>/__init__.py` if it
    carries `__version__`). Keep them in agreement.
 3. **Update `CHANGELOG.md`:** move `Unreleased` entries under a new `## [X.Y.Z] -

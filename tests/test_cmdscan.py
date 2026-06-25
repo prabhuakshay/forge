@@ -218,3 +218,57 @@ def test_redirection_target_is_not_kept_as_an_argument():
 
 def test_publish_still_detected_with_redirection():
     assert cmdscan.runs_publish("uv build > /tmp/build.log 2>&1")
+
+
+# --- shell invoked with a script (not -c) keeps the shell as the command --
+
+
+def test_shell_with_script_arg_is_not_recursed():
+    # `bash script.sh` runs a file, not an inline string — there's nothing to
+    # recurse into, so the command is the shell invocation itself.
+    assert cmdscan.iter_commands("bash script.sh") == [["bash", "script.sh"]]
+
+
+def test_shell_with_flags_before_script_arg():
+    # A non-`-c` flag before the script is skipped while scanning for `-c`, then
+    # the first non-flag token ends the scan with the shell still the command.
+    assert cmdscan.iter_commands("bash -x script.sh") == [["bash", "-x", "script.sh"]]
+
+
+# --- git boolean globals and a bare `git` with no subcommand --------------
+
+
+def test_boolean_global_flag_before_subcommand():
+    # `--no-pager` is a boolean global (no value token); the subcommand reader
+    # steps over it and still lands on `commit`.
+    assert cmdscan.runs_git_subcommand("git --no-pager commit -m x", "commit")
+
+
+def test_git_with_no_subcommand_matches_nothing():
+    # `git --version` has no subcommand position to read, so no guard fires.
+    assert not cmdscan.runs_git_subcommand("git --version", "commit")
+
+
+# --- `python -m <module>`, spaced and glued -------------------------------
+
+
+def test_glued_module_build_is_detected_as_publish():
+    # `python -mbuild` (no space) is the rare glued form of `python -m build`.
+    assert cmdscan.runs_publish("python -mbuild")
+
+
+def test_plain_python_script_is_not_a_dep_command():
+    # No `-m` at all: nothing for the dep guard to flag.
+    assert cmdscan.dep_install_command("python script.py install") is None
+
+
+def test_glued_module_pip_under_matches_by_design():
+    # The spaced `python -m pip install` IS flagged; the glued `python -mpip
+    # install` under-matches — reading the subcommand anchors on a standalone
+    # `pip` token, which the glued form doesn't produce. This is the same
+    # deliberate under-match as unparsed wrapper options: a guardrail, not a
+    # sandbox, with the logged override as the backstop.
+    assert cmdscan.dep_install_command("python -m pip install requests") == (
+        "python -m pip install"
+    )
+    assert cmdscan.dep_install_command("python -mpip install requests") is None

@@ -212,14 +212,6 @@ def dirty_files(project_dir: str) -> list[str]:
     return [p for p in dirty if os.path.exists(os.path.join(project_dir, p))]
 
 
-def clear_dirty(project_dir: str) -> None:
-    """Forget all recorded dirty files. No-op if there were none."""
-    state = load(project_dir)
-    if state.get("dirty_py"):
-        state["dirty_py"] = []
-        save(project_dir, state)
-
-
 def is_current(project_dir: str, gate: str) -> bool:
     """True if `gate` last passed and nothing has changed since."""
     state = load(project_dir)

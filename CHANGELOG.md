@@ -6,6 +6,50 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-06-25
+
+### Changed
+- **`env_scan` detects the env reads it was silently missing.** The drift scan
+  now recognises `os.environ.pop(...)` and `os.environ.setdefault(...)` (both read
+  the variable, just like `.get()`), and captures variable names in *any* case
+  rather than `UPPER_CASE` only. Environment variables are case-sensitive on
+  POSIX, so a read like `os.getenv("debug_mode")` is real config that onboarding
+  must document; matching only `[A-Z…]` quietly dropped every lower/mixed-case
+  read on the floor. The drift check compares names verbatim, matching how the OS
+  resolves them (pydantic-settings stays case-folded, since it resolves env vars
+  case-insensitively). This makes the `/forge:audit` env check and the Stop gate's
+  drift check catch undocumented configuration they previously let through.
+
+### Removed
+- **`lib/state.clear_dirty`** — dead code with no caller (`record_pass` clears the
+  dirty set inline). Removing it trims the internal surface; no command, hook, or
+  documented behaviour referenced it.
+
+### Documentation
+- README now states plainly that only two agents are *evidence-bound* — the
+  `doc-sync-auditor` and `reference-auditor` must cite a `file:line` for every
+  finding — while `python-quality-auditor`, `doc-gap-scanner`, and
+  `python-test-author` are advisory/generative, so the "grounded" claim no longer
+  reads as covering the whole agent fleet.
+- README's **Stop gate** description now says when it fires (on turn-end), what it
+  runs (format/lint/types scoped to changed files, plus env drift — not the test
+  suite), and that failures are fed back rather than walling off.
+- `docs/state-schema.md` documents that `dirty_py` is cleared **only** by a green
+  `check` (which runs the tests), so it intentionally accumulates across a session
+  past `audit`/`review` passes — bounded to real files and correct because mypy
+  follows imports.
+- `/forge:docs` report header no longer looks like a subcommand
+  (`/forge:docs complete` → `Documentation pass complete`); `/forge:release` now
+  gives the concrete command for listing commits since the last tag.
+- README's `lib/` layout list now includes the `status` module (it backs
+  `/forge:status`) — caught by the doc-sync auditor during this release.
+
+### Internal
+- Closed the remaining branch-coverage gaps in `lib/cmdscan` (shell-with-script,
+  boolean git globals, bare `git`, glued `-m` modules) and `lib/state`
+  (unreadable source file, corrupt `dirty_py`, double-failure temp cleanup):
+  `cmdscan` 91%→98%, `state` 89%→96%, suite total 94%→96%.
+
 ## [0.7.0] - 2026-06-25
 
 ### Added
@@ -270,7 +314,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/prabhuakshay/forge/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/prabhuakshay/forge/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/prabhuakshay/forge/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/prabhuakshay/forge/compare/v0.4.0...v0.5.0
