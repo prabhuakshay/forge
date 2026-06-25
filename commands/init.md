@@ -29,15 +29,24 @@ placeholders (`{{PROJECT_NAME}}`, `{{PACKAGE}}`, `{{DESCRIPTION}}`, `{{AUTHOR}}`
    signals are absent or conflict, ask rather than guess. Type only tweaks
    dependencies and the architecture doc; the workflow is identical for all.
 
+2a. **For Django projects:** Create a health check management command at
+    `{{PACKAGE}}/management/commands/healthcheck.py` for Docker health checks.
+    Use Django-specific Docker files: `Dockerfile.django`, `Dockerfile.django.dev`,
+    `docker-compose.django.yml`, `docker-compose.django.dev.yml` (with gunicorn
+    for prod, health check endpoint integration, and migrate/collectstatic commands).
+
 3. **Lay down the structure:**
    - `src/{{PACKAGE}}/__init__.py` (with a module docstring and `__version__`)
    - `tests/` with a trivial passing `test_smoke.py`
    - Copy & substitute: `pyproject.toml`, `.gitignore`, `.env.example`,
      `CHANGELOG.md`, `CLAUDE.md`, `README.md` (write a real quickstart),
      `.pre-commit-config.yaml`, `.github/workflows/ci.yml`,
-     `scripts/check_env_sync.py`, `Dockerfile`, `Dockerfile.dev`, `docker-compose.yml`,
-     `docker-compose.dev.yml`, `.dockerignore`, and the whole `docs/` tree
+     `scripts/check_env_sync.py`, `.dockerignore`, and the whole `docs/` tree
      (`index.md`, `architecture.md`, `decisions/README.md`, `decisions/_template.md`).
+   - Copy & substitute Docker files:
+     - Generic: `Dockerfile`, `Dockerfile.dev`, `docker-compose.yml`, `docker-compose.dev.yml`
+     - Django-specific (if detected): `Dockerfile.django`, `Dockerfile.django.dev`,
+       `docker-compose.django.yml`, `docker-compose.django.dev.yml`
    - Create `.forge/directives.md` from `templates/directives.md.tmpl`.
 
 4. **Install style references** for the detected type. Use

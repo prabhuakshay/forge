@@ -1,0 +1,19 @@
+FROM python:{{PYTHON_VERSION}}-slim
+
+WORKDIR /app
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Copy project files
+COPY pyproject.toml uv.lock ./
+COPY . .
+
+# Install all dependencies including dev
+RUN uv sync --all-extras
+
+# Install watchfiles for hot reload
+RUN uv pip install watchfiles
+
+# Run Django dev server with auto-reload
+CMD ["watchfiles", "--ignore-paths", ".git,.pytest_cache,.ruff_cache,.mypy_cache,*.sqlite3", "python", "manage.py", "runserver", "0.0.0.0:8000"]

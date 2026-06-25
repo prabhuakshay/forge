@@ -1,0 +1,17 @@
+"""Health check management command for Docker."""
+from django.core.management.base import BaseCommand
+from django.db import connection
+
+
+class Command(BaseCommand):
+    help = "Health check for Docker containers"
+
+    def handle(self, *args, **options):
+        try:
+            # Check database connectivity
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            self.stdout.write(self.style.SUCCESS("OK"))
+        except Exception as e:
+            self.stderr.write(self.style.ERROR(f"FAILED: {str(e)}"))
+            raise SystemExit(1)
