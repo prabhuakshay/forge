@@ -234,3 +234,31 @@ def test_override_rejects_unknown_gate(project):
     assert proc.returncode == 2
     assert "usage" in proc.stderr.lower()
     assert state.pending_overrides(project) == {}
+
+
+def test_override_list_shows_history(project):
+    state.log_override(project, "check", "first bypass")
+    proc = run_bin("override", ("list",), cwd=project)
+    assert proc.returncode == 0
+    assert "first bypass" in proc.stdout
+
+
+def test_override_list_empty(project):
+    proc = run_bin("override", ("list",), cwd=project)
+    assert proc.returncode == 0
+    assert "No overrides" in proc.stdout
+
+
+def test_override_prune_keeps_recent(project):
+    for i in range(4):
+        state.log_override(project, "check", f"r{i}")
+    proc = run_bin("override", ("prune", "1"), cwd=project)
+    assert proc.returncode == 0
+    assert "Pruned 3" in proc.stdout
+    assert [e["reason"] for e in state.load(project)["overrides"]] == ["r3"]
+
+
+def test_override_prune_rejects_bad_count(project):
+    proc = run_bin("override", ("prune", "lots"), cwd=project)
+    assert proc.returncode == 2
+    assert "usage" in proc.stderr.lower()

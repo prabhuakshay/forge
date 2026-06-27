@@ -217,3 +217,28 @@ def test_timeout_honours_env_override(monkeypatch):
 def test_timeout_falls_back_on_garbage(monkeypatch):
     monkeypatch.setenv("FORGE_GATE_TIMEOUT", "not-a-number")
     assert gate._timeout() == 600
+
+
+# --- configurable coverage floor ------------------------------------------
+
+
+def test_cov_floor_defaults_to_constant(monkeypatch):
+    monkeypatch.delenv("FORGE_COVERAGE_FLOOR", raising=False)
+    assert gate._cov_floor() == gate.COVERAGE_FAIL_UNDER
+
+
+def test_cov_floor_honours_env_override(monkeypatch):
+    monkeypatch.setenv("FORGE_COVERAGE_FLOOR", "95")
+    assert gate._cov_floor() == 95
+
+
+def test_cov_floor_falls_back_on_garbage(monkeypatch):
+    monkeypatch.setenv("FORGE_COVERAGE_FLOOR", "lots")
+    assert gate._cov_floor() == gate.COVERAGE_FAIL_UNDER
+
+
+def test_run_tests_uses_env_floor_when_project_has_none(monkeypatch, tmp_path):
+    monkeypatch.setenv("FORGE_COVERAGE_FLOOR", "73")
+    seen = _capture_cmd(monkeypatch)
+    gate.run_tests(str(tmp_path))  # no pyproject.toml → default applies
+    assert "--cov-fail-under=73" in seen[0]

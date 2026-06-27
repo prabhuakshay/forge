@@ -58,3 +58,16 @@ still green before summarising.
 
 Summarise what changed and remind the user to `/forge:review` and `/forge:audit`
 before committing/releasing.
+
+Then output a **"Try it yourself"** section: a concrete, ordered list of steps the
+user can run to experience and verify the changes by hand. This is manual
+acceptance testing, distinct from the automated suite — it tells the user what to
+*do* to see the new behaviour for themselves.
+
+- Cover each user-visible change with at least one step. Skip changes that have no
+  user-observable surface (pure refactors, internal helpers); if nothing is
+  user-observable, say so in one line instead of inventing steps.
+- Make every step actionable and copy-pasteable: the exact command, URL, input,
+  or UI action — and the result to expect ("you should see …"). Don't restate the
+  automated tests; describe the lived experience.
+- Note any setup a step needs (env var, fixture, running server, login) before it.

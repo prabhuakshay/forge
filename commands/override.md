@@ -31,3 +31,18 @@ Then tell the user the override is armed and which single action it will permit,
 and retry that action. Do not arm an override the user didn't ask for: surface
 the gate's failure and let them decide. (Writing `.forge/override-<gate>` by hand
 does the same thing — this command is just the ergonomic front door.)
+
+## Reviewing and pruning the trail
+
+The consumed-override trail is append-only by design — it's the record of what was
+skipped and why. To inspect or compact it:
+
+```bash
+python3 "$CLAUDE_PLUGIN_ROOT/bin/override.py" list            # show the trail
+python3 "$CLAUDE_PLUGIN_ROOT/bin/override.py" prune [keep]    # keep newest N (default 0 = clear)
+```
+
+`/forge:status` nudges toward this when the trail piles up: many bypasses usually
+mean a gate is mis-calibrated for the project (worth a `/forge:decide` to adjust)
+or the history just needs compacting. Pruning never touches an *armed* (not-yet-
+consumed) override — only history.

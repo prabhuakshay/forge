@@ -21,6 +21,10 @@ _OK = "✓"  # ✓
 _BAD = "✗"  # ✗
 _NA = "—"  # —
 
+# Above this many consumed overrides, status nudges the user to review/prune —
+# a high count usually means a gate is fighting the project, not helping it.
+_OVERRIDE_PILEUP = 10
+
 
 def _gate_line(project_dir: str, gate: str, label: str) -> str:
     """One gate's line: green for the current tree, stale, or never run."""
@@ -90,6 +94,13 @@ def report(project_dir: str) -> str:
             out.append(
                 f"  {entry.get('at', '?')}  {entry.get('gate', '?')} — "
                 f"{entry.get('reason', '')}"
+            )
+        # A pile-up of bypasses is a signal worth surfacing: either a gate is
+        # mis-calibrated for this project, or the trail just needs compacting.
+        if len(history) > _OVERRIDE_PILEUP:
+            out.append(
+                f"  {_BAD} {len(history)} bypasses recorded — a gate may be "
+                "mis-calibrated; review, or /forge:override prune to compact."
             )
         out.append("")
 

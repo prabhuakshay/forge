@@ -14,8 +14,18 @@ python3 "$CLAUDE_PLUGIN_ROOT/bin/audit.py"
 ```
 
 This checks `.env.example` ↔ code config, `uv.lock` sync, scaffolding
-completeness, and metadata agreement. Fix every `✗` (warnings `!` are advisory —
-address or consciously accept). Re-run until clean.
+completeness, **version agreement** (every place the project records its version —
+`pyproject.toml`, package `__version__`, `.claude-plugin/` manifests — must
+match), metadata agreement, and **security**: known-vulnerable dependencies
+(`pip-audit`) and risky code patterns (`bandit`). Fix every `✗` (warnings `!` are
+advisory — address or consciously accept). Re-run until clean.
+
+The security scanners are optional: if `pip-audit`/`bandit` aren't installed the
+check is *skipped with a hint*, not failed — add them with `uv add --group dev
+pip-audit bandit` to turn it on. Dependency CVEs are blocking; code findings are
+advisory by default (set `FORGE_SECURITY_STRICT=1` to make HIGH-severity/
+HIGH-confidence ones block). Deep, logic-level security review is the `python-security-auditor` agent's
+job in `/forge:review`.
 
 ## 2. Doc ↔ code sync (the no-excuse part)
 

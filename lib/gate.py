@@ -19,8 +19,24 @@ from dataclasses import dataclass, field
 # The "balanced" default coverage floor. It is applied ONLY when the project
 # hasn't declared its own (see _project_sets_cov_floor) — passing it
 # unconditionally would override, and could silently *lower*, a stricter project
-# setting, which is the opposite of what a quality gate should do.
+# setting, which is the opposite of what a quality gate should do. Override the
+# default per project (or in CI) with FORGE_COVERAGE_FLOOR — see _cov_floor.
 COVERAGE_FAIL_UNDER = 80
+
+
+def _cov_floor() -> int:
+    """The default coverage floor, overridable via FORGE_COVERAGE_FLOOR.
+
+    Mirrors FORGE_GATE_TIMEOUT: a team that wants a stricter (or, knowingly,
+    looser) bar than 80 sets it once in the environment instead of editing the
+    plugin. A project's own `fail_under` in pyproject still wins over this — see
+    _project_sets_cov_floor — so this only moves the *default* applied when the
+    project hasn't pinned one. A malformed value falls back to the constant."""
+    try:
+        return int(os.environ.get("FORGE_COVERAGE_FLOOR", str(COVERAGE_FAIL_UNDER)))
+    except (TypeError, ValueError):
+        return COVERAGE_FAIL_UNDER
+
 
 # Per-step subprocess timeout (seconds). A hung tool must not wedge a hook
 # forever, but a large suite can legitimately run long, so the ceiling is
@@ -208,7 +224,7 @@ def run_tests(project_dir: str, cov: bool = True) -> StepResult:
     if cov and not _project_sets_cov_floor(project_dir):
         # Impose forge's default floor only when the project hasn't set its own,
         # so we never override (or silently lower) a stricter project config.
-        args += [f"--cov-fail-under={COVERAGE_FAIL_UNDER}"]
+        args += [f"--cov-fail-under={_cov_floor()}"]
     return _run(project_dir, "pytest", args)
 
 

@@ -20,6 +20,10 @@ Dispatch in parallel and collect findings:
 - **`reference-auditor`** — checks changed files against the style references that
   govern them (`.forge/references/`). Blocking-reference violations are blocking
   findings.
+- **`python-security-auditor`** — logic-level security review of changed code that
+  crosses a trust boundary (input, I/O, subprocess, deserialization, secrets,
+  auth). Complements the mechanical `pip-audit`/`bandit` scans the audit gate
+  runs. Skip when the change has no security-relevant surface.
 - For Django projects, also use the project's `django-quality-auditor` and
   `django-security-auditor` agents on the changed code.
 - Yourself: check correctness, edge cases, and that each change honours the

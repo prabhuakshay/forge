@@ -228,6 +228,26 @@ def log_override(project_dir: str, gate: str, reason: str) -> None:
         save(project_dir, state)
 
 
+def prune_overrides(project_dir: str, keep: int = 0) -> int:
+    """Trim the consumed-override trail to its `keep` most recent entries.
+
+    The trail is append-only by design (the record of what was skipped and why is
+    the point), but over a long-lived repo it accumulates. This lets a human
+    deliberately compact it — keeping the newest `keep` and dropping older ones.
+    `keep=0` clears it entirely. Returns the number of entries removed. Armed
+    (not-yet-consumed) sentinels are untouched — this only edits history."""
+    keep = max(0, keep)
+    with locked(project_dir):
+        state = load(project_dir)
+        history = state.get("overrides")
+        if not isinstance(history, list) or len(history) <= keep:
+            return 0
+        removed = len(history) - keep
+        state["overrides"] = history[len(history) - keep :] if keep else []
+        save(project_dir, state)
+    return removed
+
+
 def request_override(project_dir: str, gate: str, reason: str = "") -> str:
     """Arm a one-shot override for `gate` by writing its sentinel file.
 

@@ -6,6 +6,29 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-27
+
+### Added
+- **Version-agreement check in `/forge:audit`.** The mechanical audit now refuses
+  to pass when a project declares its version in more than one place that
+  disagree — `pyproject.toml [project]`, a package `__version__`, and every
+  `.claude-plugin/*.json` manifest (top-level and nested plugin entries). This
+  caught a real drift: `pyproject.toml` was `0.10.0` while the plugin/marketplace
+  manifests were still `0.9.1`. (`lib/versions.py`)
+- **Security scanning in `/forge:audit`.** Optional `pip-audit` (dependency CVEs,
+  blocking) and `bandit` (risky code patterns, advisory — or blocking under
+  `FORGE_SECURITY_STRICT=1`) scans. Both degrade to a hint when the tool isn't
+  installed, so forge never forces the dependency. (`lib/security.py`)
+- **`python-security-auditor` agent** for logic-level security review of changed
+  code in `/forge:review`, complementing the mechanical scanners.
+- **Override hygiene.** `/forge:override list` prints the consumed-bypass trail and
+  `/forge:override prune [keep]` compacts it; `/forge:status` now warns when the
+  trail piles up (a signal a gate may be mis-calibrated).
+- **`FORGE_COVERAGE_FLOOR`** env var to override the default coverage floor (80),
+  mirroring `FORGE_GATE_TIMEOUT`. A project's own `fail_under` still wins.
+- **Three new style references:** `fastapi`, `pytest`, and `library` (packaging /
+  library-authoring conventions), installable via `/forge:reference add`.
+
 ## [0.10.0] - 2026-06-25
 
 ### Added
@@ -399,7 +422,9 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/prabhuakshay/forge/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/prabhuakshay/forge/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/prabhuakshay/forge/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/prabhuakshay/forge/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/prabhuakshay/forge/compare/v0.7.0...v0.8.0

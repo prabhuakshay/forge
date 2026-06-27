@@ -17,7 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from lib import env_scan  # noqa: E402
+from lib import env_scan, security, versions  # noqa: E402
 
 REQUIRED_FILES = [
     "README.md",
@@ -73,6 +73,39 @@ def _check_lockfile(project: str, problems: list[str], warnings: list[str]) -> N
         pass
 
 
+def _check_versions(project: str, problems: list[str]) -> None:
+    """Block when the project declares its version in 2+ places that disagree —
+    e.g. pyproject.toml ahead of the plugin manifests. Shipping that publishes an
+    artifact whose own files contradict each other."""
+    mismatch = versions.disagreements(project)
+    if mismatch:
+        problems.append(mismatch + " — run the release bump so they agree.")
+
+
+def _check_security(project: str, problems: list[str], warnings: list[str]) -> None:
+    """Scan for known-vulnerable dependencies (blocking) and risky code patterns
+    (advisory, or blocking under FORGE_SECURITY_STRICT). Both degrade to a hint
+    when the scanner isn't installed — forge never forces the dependency."""
+    deps = security.scan_dependencies(project)
+    if not deps.available or not deps.completed:
+        warnings.append(f"dependency scan skipped: {deps.note}")
+    elif deps.findings:
+        problems.append(
+            f"Vulnerable dependencies ({len(deps.findings)}):\n      "
+            + "\n      ".join(deps.findings)
+        )
+
+    code = security.scan_code(project)
+    if not code.available or not code.completed:
+        warnings.append(f"code security scan skipped: {code.note}")
+    elif code.findings:
+        bucket = problems if security.strict() else warnings
+        label = "Risky code patterns" if security.strict() else "Code security notes"
+        bucket.append(
+            f"{label} ({len(code.findings)}):\n      " + "\n      ".join(code.findings)
+        )
+
+
 def _check_metadata(project: str, warnings: list[str]) -> None:
     """Light agreement check: requires-python vs mypy's python_version.
 
@@ -100,6 +133,8 @@ def main() -> int:
     _check_env(project, problems, warnings)
     _check_scaffolding(project, problems)
     _check_lockfile(project, problems, warnings)
+    _check_versions(project, problems)
+    _check_security(project, problems, warnings)
     _check_metadata(project, warnings)
 
     print("forge audit (mechanical)")

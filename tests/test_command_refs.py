@@ -77,6 +77,28 @@ def test_command_agent_references_resolve():
     assert not unresolved, f"commands reference unknown agents: {unresolved}"
 
 
+def test_library_references_have_valid_frontmatter():
+    """Every reference shipped in references/ must parse with the required
+    frontmatter — a malformed one would fail silently at `/forge:reference add`."""
+    import sys
+
+    sys.path.insert(0, PLUGIN_ROOT)
+    from lib import references
+
+    lib_dir = os.path.join(PLUGIN_ROOT, "references")
+    md = [n for n in os.listdir(lib_dir) if n.endswith(".md")]
+    assert md, "expected shipped references"
+    for name in md:
+        ref = references.load_one(os.path.join(lib_dir, name))
+        assert ref is not None, f"{name} failed to parse"
+        assert ref.name and ref.summary, f"{name} missing name/summary"
+        assert ref.enforcement in {"blocking", "advisory"}, (
+            f"{name} bad enforcement: {ref.enforcement}"
+        )
+        # applies_to may be empty: some references (e.g. django) ship unscoped in
+        # the library and are scoped to the project's layout at install time.
+
+
 def test_hook_scripts_exist():
     """Every script wired into hooks.json must be a real file — a renamed or
     deleted script would silently disable that hook (forge fails open)."""

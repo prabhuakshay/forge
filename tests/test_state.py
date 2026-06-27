@@ -284,3 +284,33 @@ def test_overrides_are_concurrency_safe(project):
         t.join()
 
     assert len(state.load(project)["overrides"]) == 30
+
+
+def test_prune_overrides_keeps_newest_n(project):
+    for i in range(5):
+        state.log_override(project, "check", f"r{i}")
+    removed = state.prune_overrides(project, keep=2)
+    assert removed == 3
+    kept = state.load(project)["overrides"]
+    assert [e["reason"] for e in kept] == ["r3", "r4"]
+
+
+def test_prune_overrides_clears_all_by_default(project):
+    for i in range(3):
+        state.log_override(project, "check", f"r{i}")
+    assert state.prune_overrides(project) == 3
+    assert state.load(project)["overrides"] == []
+
+
+def test_prune_overrides_noop_when_within_keep(project):
+    state.log_override(project, "check", "only")
+    assert state.prune_overrides(project, keep=5) == 0
+    assert len(state.load(project)["overrides"]) == 1
+
+
+def test_prune_overrides_leaves_armed_sentinels(project):
+    """Pruning history must not disarm a pending one-shot override."""
+    state.log_override(project, "check", "old")
+    state.request_override(project, "audit", "armed")
+    state.prune_overrides(project, keep=0)
+    assert state.pending_overrides(project) == {"audit": "armed"}
