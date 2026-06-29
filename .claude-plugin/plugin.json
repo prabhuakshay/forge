@@ -1,6 +1,6 @@
 {
   "name": "forge",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "description": "Opinionated Python project workflow (Python-only; Linux/macOS): plan → build → check → audit → release, with enforced gates, durable design directives, and docs/.env-in-sync guarantees.",
   "author": { "name": "Akshay Prabhu" },
   "homepage": "https://github.com/prabhuakshay/forge",

@@ -35,10 +35,14 @@ Semantic Versioning. Pick the bump from what changed since the last tag:
    that modifies a tracked file. Doing it up front keeps the commit clean.
 3. [ ] **Update `CHANGELOG.md`:** move everything under `## [Unreleased]` into a
    new `## [X.Y.Z] - YYYY-MM-DD` section. Add anything notable that's missing
-   rather than shipping an incomplete changelog. Update the compare/release links
-   at the bottom (`[Unreleased]` → `compare/vX.Y.Z...HEAD`, add `[X.Y.Z]`).
-4. [ ] **Commit** the bump: `git commit -m "Release vX.Y.Z"` (the prek hook runs
-   the gate; let it pass, don't bypass).
+   rather than shipping an incomplete changelog. Record only the *net* change a
+   user sees in this release, not intra-release churn: if something was added and
+   then removed within the same release, list neither; if something was added and
+   then fixed within the same release, list only the final working feature, not
+   the fix. Update the compare/release links at the bottom (`[Unreleased]` →
+   `compare/vX.Y.Z...HEAD`, add `[X.Y.Z]`).
+4. [ ] **Commit** the bump: `git commit -m "chore(release): release vX.Y.Z"` (the
+   prek hook runs the gate; let it pass, don't bypass).
 5. [ ] **Push** and wait for CI to go green: `git push`.
 6. [ ] **Tag** the released commit annotated, and push the tag:
    `git tag -a vX.Y.Z -m "forge vX.Y.Z" && git push origin vX.Y.Z`.

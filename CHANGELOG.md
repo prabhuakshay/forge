@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-06-29
+
+### Changed
+- **`/forge:release` commit message** now follows the conventional-commit form
+  `chore(release): release vX.Y.Z` instead of `Release vX.Y.Z`.
+- **Changelog guidance for `/forge:release`** now records only the *net*
+  user-visible change in a release, not intra-release churn: something added and
+  then removed within the same release is listed nowhere, and something added and
+  then fixed within the same release is listed only as the final working feature.
+
+### Fixed
+- **README layout table** brought back in sync with the tree: the `agents/`,
+  `lib/`, and `references/` listings now include the `security-auditor` agent,
+  the `security`/`versions` modules, and the `fastapi`/`library`/`pytest`
+  references added in 0.11.0.
+
 ## [0.11.0] - 2026-06-27
 
 ### Added
@@ -422,7 +438,8 @@ First public release.
   integration) at ~90% coverage, a `prek` pre-commit config running the same
   gate, and GitHub Actions CI across Python 3.10–3.13.
 
-[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/prabhuakshay/forge/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/prabhuakshay/forge/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/prabhuakshay/forge/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/prabhuakshay/forge/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/prabhuakshay/forge/compare/v0.9.0...v0.9.1

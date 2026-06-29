@@ -131,11 +131,11 @@ the project's environment exists.
 ```
 .claude-plugin/plugin.json   manifest
 commands/                    the workflow commands
-agents/                      doc-sync, doc-gap-scanner, quality, test-author, reference auditors
+agents/                      doc-sync, doc-gap-scanner, quality, security, test-author, reference auditors
 hooks/                       hooks.json + enforcement & injection scripts
-lib/                         stdlib-only core (state, fingerprint, gate, env_scan, doc_claims, decisions, references, cmdscan, hookio, status)
+lib/                         stdlib-only core (state, fingerprint, gate, env_scan, doc_claims, decisions, references, cmdscan, hookio, status, security, versions)
 bin/                         CLI entrypoints the commands call
-references/                  starter style-reference library (django, cli, python-base)
+references/                  starter style-reference library (django, cli, python-base, fastapi, library, pytest)
 templates/                   artifacts /forge:init scaffolds into a project
 tests/                       the plugin's own test suite (stdlib + pytest)
 ```
